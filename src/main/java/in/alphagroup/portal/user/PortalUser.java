@@ -38,6 +38,10 @@ public class PortalUser implements UserDetails {
     @Column(name = "full_name", nullable = false, length = 80)
     private String fullName;
 
+    /** E.164 mobile number, e.g. {@code +919876543210}. */
+    @Column(name = "phone", length = 20)
+    private String phone;
+
     @Column(nullable = false)
     private boolean enabled = true;
 
@@ -52,10 +56,11 @@ public class PortalUser implements UserDetails {
         // for JPA
     }
 
-    public PortalUser(String email, String passwordHash, String fullName) {
+    public PortalUser(String email, String passwordHash, String fullName, String phone) {
         this.email = email;
         this.passwordHash = passwordHash;
         this.fullName = fullName;
+        this.phone = phone;
         this.enabled = true;
     }
 
@@ -70,6 +75,14 @@ public class PortalUser implements UserDetails {
 
     public String getFullName() {
         return fullName;
+    }
+
+    public String getPhone() {
+        return phone;
+    }
+
+    public void setPhone(String phone) {
+        this.phone = phone;
     }
 
     public void setFullName(String fullName) {

@@ -1,6 +1,7 @@
 package in.alphagroup.portal.web;
 
 import in.alphagroup.portal.config.AlphaProperties;
+import in.alphagroup.portal.policy.PhoneNumbers;
 import in.alphagroup.portal.user.PortalUser;
 import jakarta.servlet.http.HttpSession;
 import java.time.Instant;
@@ -34,6 +35,7 @@ public class DashboardController {
         Map<String, Object> account = new LinkedHashMap<>();
         account.put("name", user.getFullName());
         account.put("email", user.getEmail());
+        account.put("phone", user.getPhone() == null ? "" : PhoneNumbers.display(user.getPhone()));
         account.put("id", user.getId());
         account.put("joined", user.getCreatedAt() == null ? "" : DAY.format(user.getCreatedAt()));
         account.put("lastLogin", user.getLastLoginAt() == null ? "" : DAY.format(user.getLastLoginAt()));

@@ -39,6 +39,9 @@
     <dl class="kv">
       <div><dt>Name</dt><dd th:text="${account['name']}">—</dd></div>
       <div><dt>E-mail</dt><dd th:text="${account['email']}">—</dd></div>
+      <div th:if="${account['phone'] != null and !account['phone'].isEmpty()}">
+        <dt>Mobile</dt><dd th:text="${account['phone']}">—</dd>
+      </div>
       <div><dt>User ID</dt><dd class="mono" th:text="${account['id']}">—</dd></div>
       <div th:if="${account['joined'] != null and !account['joined'].isEmpty()}">
         <dt>Member since</dt><dd th:text="${account['joined']}">—</dd>

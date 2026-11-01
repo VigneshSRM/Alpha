@@ -1,7 +1,9 @@
 package in.alphagroup.portal.web;
 
 import in.alphagroup.portal.config.AlphaProperties;
+import in.alphagroup.portal.policy.Countries;
 import in.alphagroup.portal.policy.PasswordPolicy;
+import in.alphagroup.portal.policy.PhoneNumbers;
 import in.alphagroup.portal.policy.PolicyResult;
 import in.alphagroup.portal.reset.PasswordResetService;
 import in.alphagroup.portal.security.AttemptKeys;
@@ -174,8 +176,8 @@ public class AuthController {
                 return ResponseEntity.unprocessableEntity()
                         .body(errorBody(message, "validation", errors, null));
             }
-            return renderForm("login", HttpStatus.UNPROCESSABLE_ENTITY,
-                    message, errors, email, remember, nextUrl, "");
+            return renderForm("login", HttpStatus.UNPROCESSABLE_ENTITY, message, errors,
+                    Map.of("email", email, "remember", remember), nextUrl);
         }
 
         // 2. Brute-force throttle.
@@ -190,8 +192,8 @@ public class AuthController {
                 return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
                         .body(errorBody(message, "rate_limited", throttleErrors, extra));
             }
-            return renderForm("login", HttpStatus.TOO_MANY_REQUESTS,
-                    message, throttleErrors, email, remember, nextUrl, "");
+            return renderForm("login", HttpStatus.TOO_MANY_REQUESTS, message, throttleErrors,
+                    Map.of("email", email, "remember", remember), nextUrl);
         }
 
         // 3. Credentials — Spring Security checks the BCrypt hash.
@@ -221,8 +223,8 @@ public class AuthController {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN)
                         .body(errorBody(message, "account_disabled", failureErrors, null));
             }
-            return renderForm("login", HttpStatus.FORBIDDEN,
-                    message, failureErrors, email, remember, nextUrl, "");
+            return renderForm("login", HttpStatus.FORBIDDEN, message, failureErrors,
+                    Map.of("email", email, "remember", remember), nextUrl);
 
         } catch (AuthenticationException failure) {
             int remaining = throttle.registerFailure(keys);
@@ -243,8 +245,8 @@ public class AuthController {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                         .body(errorBody(message, "invalid_credentials", failureErrors, extra));
             }
-            return renderForm("login", HttpStatus.UNAUTHORIZED,
-                    message, failureErrors, email, remember, nextUrl, "");
+            return renderForm("login", HttpStatus.UNAUTHORIZED, message, failureErrors,
+                    Map.of("email", email, "remember", remember), nextUrl);
         }
     }
 
@@ -267,6 +269,8 @@ public class AuthController {
         String email = value(params, "email").trim();
         String password = value(params, "password");
         String confirm = value(params, "confirm_password");
+        String countryCode = value(params, "country_code").trim();
+        String phone = value(params, "phone").trim();
         boolean json = Requests.wantsJson(request);
 
         Map<String, String> errors = new LinkedHashMap<>();
@@ -282,6 +286,12 @@ public class AuthController {
             errors.put("email", "Enter your e-mail address.");
         } else if (!Emails.isValid(email)) {
             errors.put("email", "Enter a valid e-mail address, e.g. name@company.com.");
+        }
+
+        // The picker offers every dialling code, but only this check decides.
+        PhoneNumbers.Result phoneResult = PhoneNumbers.validate(countryCode, phone);
+        if (!phoneResult.valid()) {
+            errors.put("phone", phoneResult.error());
         }
 
         if (password.isEmpty()) {
@@ -314,12 +324,12 @@ public class AuthController {
                 return ResponseEntity.unprocessableEntity()
                         .body(errorBody(message, "validation", errors, extra));
             }
-            return renderForm("signup", HttpStatus.UNPROCESSABLE_ENTITY,
-                    message, errors, email, true, "/dashboard", name);
+            return renderForm("signup", HttpStatus.UNPROCESSABLE_ENTITY, message, errors,
+                    signupForm(name, email, countryCode, phone), "/dashboard");
         }
 
         try {
-            PortalUser user = userService.register(email, password, name);
+            PortalUser user = userService.register(email, password, name, phoneResult.e164());
             Authentication authentication = UsernamePasswordAuthenticationToken.authenticated(
                     user, null, user.getAuthorities());
             establishSession(request, response, session, authentication, true, user);
@@ -340,8 +350,8 @@ public class AuthController {
                 return ResponseEntity.status(HttpStatus.CONFLICT)
                         .body(errorBody(message, "user_exists", failureErrors, null));
             }
-            return renderForm("signup", HttpStatus.CONFLICT,
-                    message, failureErrors, email, true, "/dashboard", name);
+            return renderForm("signup", HttpStatus.CONFLICT, message, failureErrors,
+                    signupForm(name, email, countryCode, phone), "/dashboard");
         }
     }
 
@@ -464,27 +474,38 @@ public class AuthController {
     }
 
     /** Non-JavaScript fallback: re-render the page with the server's verdict. */
+    private static Map<String, Object> signupForm(
+            String name, String email, String countryCode, String phone) {
+        Map<String, Object> form = new LinkedHashMap<>();
+        form.put("name", name);
+        form.put("email", email);
+        form.put("remember", Boolean.FALSE);
+        form.put("country",
+                Countries.byIso(countryCode) == null ? Countries.DEFAULT_ISO : countryCode);
+        form.put("phone", phone);
+        return form;
+    }
+
     private ModelAndView renderForm(
             String view,
             HttpStatus status,
             String message,
             Map<String, String> errors,
-            String email,
-            boolean remember,
-            String nextUrl,
-            String name) {
+            Map<String, Object> submitted,
+            String nextUrl) {
 
         ModelAndView mav = new ModelAndView(view, status);
         Map<String, Object> form = new LinkedHashMap<>();
-        form.put("email", email);
-        form.put("name", name == null ? "" : name);
-        form.put("remember", remember);
+        form.put("email", submitted.getOrDefault("email", ""));
+        form.put("name", submitted.getOrDefault("name", ""));
+        form.put("remember", submitted.getOrDefault("remember", Boolean.FALSE));
+        form.put("country", submitted.getOrDefault("country", Countries.DEFAULT_ISO));
+        form.put("phone", submitted.getOrDefault("phone", ""));
         mav.addObject("error", message);
         mav.addObject("errors", errors);
         mav.addObject("form", form);
         mav.addObject("notice", "");
         mav.addObject("nextUrl", nextUrl);
-        mav.addObject("pageMode", view);
         return mav;
     }
 

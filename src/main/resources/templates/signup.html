@@ -70,6 +70,32 @@
           <p class="field__error" id="emailError" role="alert" th:text="${errors['email']}"></p>
         </div>
 
+        <div class="field" data-field="phone">
+          <label class="field__label" for="phone">Mobile number</label>
+          <div class="control control--split">
+            <span class="control__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"
+                   stroke-linecap="round" stroke-linejoin="round">
+                <rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18.5h2"/>
+              </svg>
+            </span>
+            <select class="control__select" id="country_code" name="country_code"
+                    aria-label="Country dialling code">
+              <option th:each="c : ${countries}"
+                      th:value="${c.iso}"
+                      th:text="${c.dialCode} + ' ' + ${c.name}"
+                      th:attr="data-digits=${c.minDigits + '-' + c.maxDigits}"
+                      th:selected="${c.iso == form['country']}">+91 India</option>
+            </select>
+            <input class="control__input" id="phone" name="phone" type="tel" inputmode="tel"
+                   autocomplete="tel-national" spellcheck="false" placeholder="98765 43210"
+                   maxlength="20" required th:value="${form['phone']}"
+                   aria-describedby="phoneHint phoneError">
+          </div>
+          <p class="field__hint" id="phoneHint" data-phone-hint>10 digits for the selected country</p>
+          <p class="field__error" id="phoneError" role="alert" th:text="${errors['phone']}"></p>
+        </div>
+
         <div class="field" data-field="password">
           <div class="field__top">
             <label class="field__label" for="password">Password</label>

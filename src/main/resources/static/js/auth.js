@@ -206,6 +206,73 @@
     }
   }
 
+
+  /* ------------------------------------------------------------------ */
+  /* Mobile number                                                       */
+  /*                                                                     */
+  /* Cosmetic only: digits are kept, the hint follows the country, and a  */
+  /* length check gives instant feedback. The server re-does all of it   */
+  /* against the same table and its verdict is the one that stands.      */
+  /* ------------------------------------------------------------------ */
+  function digitsFor(select) {
+    var option = select && select.options[select.selectedIndex];
+    var raw = option ? option.getAttribute("data-digits") || "" : "";
+    var parts = raw.split("-");
+    var min = parseInt(parts[0], 10);
+    var max = parseInt(parts[1] || parts[0], 10);
+    return {
+      min: isNaN(min) ? 6 : min,
+      max: isNaN(max) ? 15 : max,
+      name: option ? option.textContent.replace(/^\+\d+\s*/, "").trim() : ""
+    };
+  }
+
+  function initPhone() {
+    var input = $("phone");
+    var select = $("country_code");
+    var hint = $("phoneHint");
+    var form = $("authForm");
+    if (!input || !select || !form) return;
+
+    function describe(silent) {
+      var plan = digitsFor(select);
+      if (hint) {
+        hint.textContent = (plan.min === plan.max
+          ? plan.min + " digits"
+          : plan.min + " to " + plan.max + " digits") + " for " + plan.name;
+      }
+      var count = input.value.replace(/\D/g, "").length;
+      var short = count > 0 && count < plan.min;
+      var long = count > plan.max;
+      fieldOf(input).classList.toggle("is-invalid", Boolean(short || long));
+      if (silent) return;
+      if (long) {
+        setFieldError(input, "That is longer than the " + plan.max + " digits " + plan.name + " uses.");
+      } else if (short && count >= plan.min - 3) {
+        setFieldError(input, "Keep going — " + plan.name + " numbers have "
+          + (plan.min === plan.max ? plan.min : plan.min + " to " + plan.max) + " digits.");
+      } else {
+        clearFieldError(input);
+      }
+    }
+
+    /* Delegated so it runs after the generic "typing clears the verdict"
+       handler above; otherwise that handler would wipe the live message. */
+    form.addEventListener("input", function (event) {
+      if (event.target !== input) return;
+      var cleaned = input.value.replace(/[^\d\s()+-]/g, "");
+      if (cleaned !== input.value) input.value = cleaned;
+      describe(false);
+    });
+
+    select.addEventListener("change", function () {
+      describe(true);
+      input.focus();
+    });
+
+    describe(true);
+  }
+
   /* ------------------------------------------------------------------ */
   /* Boot                                                               */
   /* ------------------------------------------------------------------ */
@@ -218,13 +285,15 @@
     var nameInput = $("name");
     var passwordInput = $("password");
     var confirmInput = $("confirm_password");
+    var phoneInput = $("phone");
     var submitBtn = $("submitBtn");
     var tokenField = form.querySelector("input[name=csrf_token]");
     var fieldMap = {
       email: emailInput,
       name: nameInput,
       password: passwordInput,
-      confirm_password: confirmInput
+      confirm_password: confirmInput,
+      phone: phoneInput
     };
 
     /* --- password visibility + caps lock --------------------------- */
@@ -643,6 +712,9 @@
       hideFlash();
       if (fieldMap[target.name] || fieldOf(target)) clearFieldError(target);
     });
+
+    /* Registered last so its verdict survives the clearing above. */
+    initPhone();
   }
 
   if (document.readyState === "loading") {

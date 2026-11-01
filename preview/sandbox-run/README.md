@@ -40,16 +40,25 @@ Last run against this sandbox:
 [PASS] password field has a clean accessible name — Password
 [PASS] lands on the request-account page
 [PASS] no stray error banner above the e-mail field (sign-up)
+[PASS] country picker lists every country — 236 options
+[PASS] India is preselected with its dial code — IN +91 India
+[PASS] picker has an accessible name — Country dialling code
+[PASS] hint states the digits India uses — 10 digits for India
+[PASS] mobile field has a clean accessible name — Mobile number
+[PASS] a too-short number is flagged while typing — Keep going — India numbers have 10 digits.
+[PASS] letters cannot be typed into the field — 987654321
+[PASS] a 10-digit Indian number clears the warning — clean
+[PASS] choosing another country restates the expected length — 10 digits for United Kingdom
 [PASS] weak password is rejected — unmet: length, special
 [PASS] strong password is accepted — 6/6 rules met
 [PASS] account page greets the user — Welcome back, Ava Menon
 [PASS] account shows the e-mail — ava.menon@alphagroup.in
-[PASS] account has name, e-mail, id and session rows — Name, E-mail, User ID, ...
-[PASS] session countdown is live — 27m 14s
+[PASS] account has name, e-mail, id and session rows — Name, E-mail, Mobile, User ID, Member since, Last sign-in, Provider, Session expires in, Signed in
+[PASS] session countdown is live — 26m 47s
 [PASS] policy chips rendered — 6 chips
 [PASS] no console errors
 
-all checks passed
+22 checks, 0 failures
 ```
 
 It found one real defect on the first run: the `!` policy icon lived *inside*

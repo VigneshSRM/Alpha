@@ -38,3 +38,6 @@ mvn spring-boot:run -Dspring-boot.run.profiles=dev
 | `02-login-requirements.png` | Sign-in with the password-requirements panel open (hover the `!`) |
 | `03-login-mobile.png` | Sign-in, 390×844 |
 | `04-reset-password.png` | Choose-a-new-password, valid token |
+| `05-signup.png` | Request an account, 1440×900 — the country picker offers all 236 dialling codes |
+| `06-signup-mobile-error.png` | Same page with a too-short number: the field says what the selected country expects |
+| `07-signup-mobile.png` | Request an account, 390×844 |

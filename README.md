@@ -74,6 +74,14 @@ Flyway applies `src/main/resources/db/migration` on startup — no manual SQL.
 Create the first account through **/signup** (enabled by default; set
 `SIGNUP_ENABLED=false` to close registration afterwards).
 
+Registration takes a name, a work e-mail, a mobile number and a password. The
+mobile number is picked from a country list covering **236 dialling codes**
+(`policy/Countries.java`) and is validated server-side against that same table:
+the punctuation people actually type is stripped, a national trunk `0` is
+dropped, the digit count must match the country's numbering plan, and the result
+is stored in E.164 (`+919876543210`). `policy/PhoneNumbers.java` owns the rules,
+so the browser's picker and the server's verdict cannot drift apart.
+
 ## 4. Configuration
 
 | Variable | Default | Purpose |
@@ -97,8 +105,9 @@ Flyway owns the schema. `spring.jpa.hibernate.ddl-auto=none` — nothing is crea
 | `V1__portal_user.sql` | `portal_user` (email, BCrypt hash, name, enabled, created_at, last_login_at) |
 | `V2__spring_session.sql` | Spring Session JDBC tables — sessions survive a redeploy |
 | `V3__password_reset_token.sql` | single-use reset tokens, stored as SHA-256 only |
+| `V4__portal_user_phone.sql` | `phone` — E.164 mobile number captured at sign-up |
 
-To add a change, drop a new `V4__…sql` in `db/migration`; never edit an applied file.
+To add a change, drop a new `V5__…sql` in `db/migration`; never edit an applied file.
 
 ## 6. Routes
 

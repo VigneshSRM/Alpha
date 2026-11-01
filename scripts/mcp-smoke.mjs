@@ -139,6 +139,74 @@ async function main() {
     check('no stray error banner above the e-mail field (sign-up)',
       (await evaluate(noStrayBanner)) !== 'VISIBLE');
 
+    /* 2b. the mobile number: every country offered, digits checked */
+    snap = await tool('browser_snapshot', {});
+    const picker = await evaluate(`() => {
+      const select = document.getElementById('country_code');
+      const option = select.options[select.selectedIndex];
+      return {
+        count: select.options.length,
+        iso: option.value,
+        label: option.textContent.trim(),
+        dial: option.dataset.digits,
+        name: select.getAttribute('aria-label'),
+        hint: document.getElementById('phoneHint').textContent.trim(),
+      };
+    }`);
+    check('country picker lists every country', picker.count >= 230, `${picker.count} options`);
+    check('India is preselected with its dial code',
+      picker.iso === 'IN' && picker.label.includes('+91'), `${picker.iso} ${picker.label}`);
+    check('picker has an accessible name', picker.name === 'Country dialling code', picker.name);
+    check('hint states the digits India uses', /10 digits/.test(picker.hint), picker.hint);
+    check('mobile field has a clean accessible name',
+      /textbox "Mobile number"/.test(snap),
+      (snap.match(/textbox "(Mobile[^"]*|\+91[^"]*)"/) || [])[1]);
+
+    const phoneState = () => evaluate(`() => ({
+      typed: document.getElementById('phone').value,
+      error: document.getElementById('phoneError').textContent.trim(),
+      hint: document.getElementById('phoneHint').textContent.trim(),
+      invalid: document.getElementById('phone').closest('[data-field]').classList.contains('is-invalid'),
+    })`);
+
+    const setPhone = async text => {
+      await tool('browser_evaluate', {
+        function: "() => { const p = document.getElementById('phone'); p.value = ''; p.focus(); }",
+      });
+      await tool('browser_type', {
+        element: 'Mobile number', target: refFor(snap, 'Mobile number'), text, slowly: true,
+      });
+      await tool('browser_wait_for', { time: 0.5 });
+      return phoneState();
+    };
+
+    const short = await setPhone('9876543');
+    check('a too-short number is flagged while typing',
+      short.invalid && short.error.length > 0, short.error || 'no message');
+    await shot('05-mobile-too-short.png');
+
+    const junk = await setPhone('98abc7654321');
+    check('letters cannot be typed into the field', !/[a-z]/i.test(junk.typed), junk.typed);
+
+    const full = await setPhone('9876543210');
+    check('a 10-digit Indian number clears the warning',
+      !full.invalid && full.error === '', full.error || 'clean');
+
+    const abroad = await evaluate(`() => {
+      const select = document.getElementById('country_code');
+      select.value = 'GB';
+      select.dispatchEvent(new Event('change', { bubbles: true }));
+      return {
+        hint: document.getElementById('phoneHint').textContent.trim(),
+        selected: select.options[select.selectedIndex].textContent.trim(),
+      };
+    }`);
+    check('choosing another country restates the expected length',
+      /United Kingdom/.test(abroad.hint) && /10 digits/.test(abroad.hint), abroad.hint);
+    await tool('browser_evaluate', {
+      function: "() => { const s = document.getElementById('country_code'); s.value = 'IN'; s.dispatchEvent(new Event('change', { bubbles: true })); }",
+    });
+
     /* 3. fill it in; the verdict must come from the server */
     snap = await tool('browser_snapshot', {});
     for (const [label, value] of [

@@ -64,7 +64,7 @@ class PortalWebTest {
     }
 
     private PortalUser account(String email) {
-        return userService.register(email, GOOD_PASSWORD, "Ada Lovelace");
+        return userService.register(email, GOOD_PASSWORD, "Ada Lovelace", "+919876543210");
     }
 
     // ------------------------------------------------------------------

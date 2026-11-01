@@ -44,14 +44,15 @@ public class PortalUserService implements UserDetailsService {
      * @throws EmailAlreadyUsedException when the address is taken
      */
     @Transactional
-    public PortalUser register(String email, String rawPassword, String fullName) {
+    public PortalUser register(String email, String rawPassword, String fullName, String phone) {
         String normalised = normalise(email);
         if (repository.existsByEmailIgnoreCase(normalised)) {
             throw new EmailAlreadyUsedException(normalised);
         }
         try {
             return repository.save(
-                    new PortalUser(normalised, encoder.encode(rawPassword), fullName.trim()));
+                    new PortalUser(
+                            normalised, encoder.encode(rawPassword), fullName.trim(), phone));
         } catch (DataIntegrityViolationException race) {
             // Two sign-ups for the same address at the same moment.
             throw new EmailAlreadyUsedException(normalised);

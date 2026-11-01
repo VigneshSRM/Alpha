@@ -2,6 +2,7 @@ package in.alphagroup.portal.web;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import in.alphagroup.portal.config.AlphaProperties;
+import in.alphagroup.portal.policy.Countries;
 import in.alphagroup.portal.policy.PasswordPolicy;
 import java.time.Year;
 import java.util.LinkedHashMap;
@@ -39,6 +40,8 @@ public class GlobalModelAdvice {
         model.addAttribute("policy", policyMap());
         model.addAttribute("policyJson", policyJson);
         model.addAttribute("supportsSignup", properties.getSignup().isEnabled());
+        model.addAttribute("countries", Countries.ALL);
+        model.addAttribute("defaultCountry", Countries.DEFAULT_ISO);
         model.addAttribute("minLength", PasswordPolicy.MIN_LENGTH);
         model.addAttribute("maxLength", PasswordPolicy.MAX_LENGTH);
     }
