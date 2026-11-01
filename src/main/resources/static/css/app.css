@@ -537,6 +537,16 @@ ul { padding: 0; list-style: none; }
 
 .policy-pop[hidden] { display: none; }
 
+/* Wide screens have room beside the card, so the panel opens there instead of
+   dropping over the Sign in button. Narrow screens keep the overlay below. */
+@media (min-width: 1080px) {
+  .field[data-field="password"] .policy-pop {
+    left: calc(100% + 16px);
+    top: 28px;
+    width: 300px;
+  }
+}
+
 .policy-pop__title {
   font-size: 0.64rem;
   font-weight: 800;
