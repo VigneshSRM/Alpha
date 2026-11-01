@@ -1379,6 +1379,42 @@ code {
   color: var(--text-muted);
 }
 
+/* The address block opens and closes; it starts open because it is required. */
+.onb__section--fold { display: block; }
+
+.onb__fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px 20px;
+  margin-top: 14px;
+}
+
+@media (max-width: 760px) {
+  .onb__fields { grid-template-columns: minmax(0, 1fr); }
+}
+
+.onb__section > summary {
+  list-style: none;
+  cursor: pointer;
+}
+
+.onb__section > summary::-webkit-details-marker { display: none; }
+
+.onb__section > summary::after {
+  content: "";
+  margin-left: auto;
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(45deg) translateY(-2px);
+  transition: transform 0.18s var(--ease);
+}
+
+.onb__section:not([open]) > summary::after {
+  transform: rotate(-45deg) translateX(-2px);
+}
+
 .field--full { grid-column: 1 / -1; }
 
 /* The onboarding phone picker carries its own dial code, so it stays narrow. */

@@ -144,11 +144,13 @@
     </section>
 
     <!-- ---------------------------------------------------------------- -->
-    <section class="onb__section">
-      <h2 class="onb__legend">
-        Business Address
+    <details class="onb__section onb__section--fold" open>
+      <summary class="onb__legend">
+        Add Business Address
         <span class="onb__legend-note">Where stock is received and invoices are raised</span>
-      </h2>
+      </summary>
+
+      <div class="onb__fields">
 
       <div class="field field--full" data-field="addressLine1">
         <label class="field__label" for="addressLine1">Street Address<span class="field__req" aria-hidden="true">*</span></label>
@@ -189,12 +191,13 @@
         </div>
         <p class="field__error" th:text="${errors['pincode']}"></p>
       </div>
-    </section>
+      </div>
+    </details>
 
     <!-- ---------------------------------------------------------------- -->
     <section class="onb__section">
       <h2 class="onb__legend">
-        Preferences
+        More Info
         <span class="onb__legend-note">Defaults for how the numbers are worked out</span>
       </h2>
 
