@@ -373,7 +373,9 @@ ul { padding: 0; list-style: none; }
 .field__top {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  /* label + "!" sit together; keeping the icon outside the <label> stops it
+     from polluting the password field's accessible name. */
+  justify-content: flex-start;
   gap: 8px 10px;
   flex-wrap: wrap;
 }

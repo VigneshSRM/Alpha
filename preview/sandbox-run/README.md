@@ -15,6 +15,46 @@ policy**, not renders of static HTML. What ran:
 - The page was driven in headless Chromium: 29 requests were sent while typing,
   each answered by Java. `01-weak.png` is the verdict for `Summer2026`,
   `02-valid.png` is the verdict for `Alpha#2026#Group`.
+- `03-signup.png` and `04-account.png` were captured by the **Playwright MCP
+  server** driving the same Java process (see `scripts/mcp-smoke.mjs`).
+
+## The MCP smoke test
+
+`scripts/mcp-smoke.mjs` starts `@playwright/mcp` over stdio, initialises the
+session and walks the app through its tools (`browser_navigate`,
+`browser_snapshot`, `browser_click`, `browser_type`, `browser_evaluate`,
+`browser_take_screenshot`). Assertions are made against **the accessibility
+tree**, not against pixels — a control with a wrong accessible name fails the
+test even if it looks right.
+
+```bash
+npm i -D @playwright/mcp
+BASE_URL=http://127.0.0.1:8080 node scripts/mcp-smoke.mjs
+```
+
+Last run against this sandbox:
+
+```
+[PASS] sign-in page renders
+[PASS] password field has a clean accessible name — Password
+[PASS] lands on the request-account page
+[PASS] weak password is rejected — unmet: length, special
+[PASS] strong password is accepted — 6/6 rules met
+[PASS] account page greets the user — Welcome back, Ava Menon
+[PASS] account shows the e-mail — ava.menon@alphagroup.in
+[PASS] account has name, e-mail, id and session rows — Name, E-mail, User ID, ...
+[PASS] session countdown is live — 27m 14s
+[PASS] policy chips rendered — 6 chips
+[PASS] no console errors
+
+all checks passed
+```
+
+It found one real defect on the first run: the `!` policy icon lived *inside*
+the `<label>`, so the password box announced itself as `"Password Password
+requirements — hover or tap for details"`. The icon is now a sibling of the
+label (visually unchanged, `justify-content: flex-start` on `.field__top`), and
+the field announces as `"Password"`.
 
 ## What this is not
 
