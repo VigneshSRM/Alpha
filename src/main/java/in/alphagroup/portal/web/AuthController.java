@@ -262,7 +262,13 @@ public class AuthController {
             HttpSession session) {
 
         if (!properties.getSignup().isEnabled()) {
-            return "redirect:/login";
+            String closed = "Self-service registration is closed. Ask the IT desk for an account.";
+            if (Requests.wantsJson(request)) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body(errorBody(closed, "signup_closed", Map.of("form", closed), null));
+            }
+            return renderForm("signup", HttpStatus.FORBIDDEN, closed, Map.of("form", closed),
+                    Map.of(), "/login");
         }
 
         String name = value(params, "name").trim();
@@ -337,14 +343,15 @@ public class AuthController {
             if (json) {
                 Map<String, Object> body = new LinkedHashMap<>();
                 body.put("ok", true);
-                body.put("message", "Welcome to Alpha Group of India.");
-                body.put("redirect", "/dashboard");
+                body.put("code", "registered");
+                body.put("message", "Account created. Welcome to Alpha Group of India.");
+                body.put("redirect", "/dashboard?welcome=1");
                 return ResponseEntity.ok(body);
             }
-            return "redirect:/dashboard";
+            return "redirect:/dashboard?welcome=1";
 
         } catch (PortalUserService.EmailAlreadyUsedException taken) {
-            String message = "An account with this e-mail already exists. Try signing in.";
+            String message = "That e-mail address is already registered. Sign in instead.";
             Map<String, String> failureErrors = Map.of("email", message);
             if (json) {
                 return ResponseEntity.status(HttpStatus.CONFLICT)

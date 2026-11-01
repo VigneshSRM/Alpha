@@ -325,6 +325,119 @@ async function main() {
       `${strong.met.length}/6 rules met`);
     await shot('03-signup.png');
 
+    /* 3b. what the browser is told when the server answers */
+    const unique = `ava.${Date.now()}@alphagroup.in`;
+
+    const fillForm = async (email, phone = '9876543210') => {
+      await tool('browser_evaluate', {
+        function: `() => {
+          const set = (id, value) => {
+            const el = document.getElementById(id);
+            el.value = value;
+            el.dispatchEvent(new Event('input', { bubbles: true }));
+          };
+          set('name', 'Ava Menon');
+          set('email', ${JSON.stringify(email)});
+          set('phone', ${JSON.stringify(phone)});
+          set('password', 'Alpha#2026#Group');
+          set('confirm_password', 'Alpha#2026#Group');
+        }`,
+      });
+    };
+
+    /* Click, then watch the page itself for the banner the server earns us.
+       Polling inside one evaluate beats MCP round-trips: the banner only
+       lives for a second or so before the redirect. */
+    const submitAndRead = async () => {
+      const shotId = await tool('browser_snapshot', {});
+      await tool('browser_click', {
+        element: 'Create account', target: refForText(shotId, 'Create account'),
+      });
+      return evaluate(`() => new Promise(resolve => {
+        const started = Date.now();
+        const read = () => {
+          const error = document.querySelector('[data-flash]');
+          const success = document.querySelector('[data-success]');
+          const link = document.querySelector('[data-flash-link]');
+          const email = document.getElementById('email');
+          const state = {
+            errorText: error && !error.hidden ? error.textContent.trim() : '',
+            successText: success && !success.hidden ? success.textContent.trim() : '',
+            link: link && !link.hidden ? link.textContent.trim() : '',
+            emailFlagged: email ? email.closest('[data-field]').classList.contains('is-invalid') : false,
+            path: location.pathname + location.search,
+          };
+          if (state.errorText || state.successText) return resolve(state);
+          if (Date.now() - started > 10000) return resolve({ ...state, timedOut: true });
+          setTimeout(read, 50);
+        };
+        read();
+      })`);
+    };
+
+    const waitForPath = async (want, tries = 30) => {
+      for (let i = 0; i < tries; i++) {
+        const at = await evaluate('() => location.pathname');
+        if (at === want) return at;
+        await tool('browser_wait_for', { time: 0.3 });
+      }
+      return evaluate('() => location.pathname');
+    };
+
+    /* success */
+    await fillForm(unique);
+    const registered = await submitAndRead();
+    check('a successful registration says so',
+      /Account created/i.test(registered.successText), registered.successText || '(no banner)');
+    await shot('10-registered.png');
+
+    const landedPath = await waitForPath('/dashboard');
+    const landed = await evaluate(`() => ({
+      path: location.pathname,
+      search: location.search,
+      notice: (document.querySelector('.dash__notice') || {}).textContent || '',
+    })`);
+    check('the new account lands on the dashboard with a welcome notice',
+      landedPath === '/dashboard' && /welcome=1/.test(landed.search)
+        && /account is ready/i.test(landed.notice),
+      `${landed.path}${landed.search} — ${landed.notice.trim() || 'no notice'}`);
+    await shot('11-account-welcome.png', true);
+
+    /* duplicate e-mail: the server answers 409 and the browser explains it */
+    await tool('browser_navigate', { url: `${BASE}/signup` });
+    await fillForm(unique);
+    const duplicate = await submitAndRead();
+    check('a duplicate e-mail is explained, with a way out',
+      /already registered/i.test(duplicate.errorText)
+        && /sign in/i.test(duplicate.link)
+        && duplicate.emailFlagged,
+      `${duplicate.errorText || '(no banner)'} [link: ${duplicate.link || 'none'}]`);
+    await shot('12-signup-duplicate.png');
+
+    /* the network drops */
+    await tool('browser_navigate', { url: `${BASE}/signup` });
+    await fillForm(`net.${Date.now()}@alphagroup.in`);
+    await tool('browser_evaluate', {
+      function: "() => { window.__fetch = window.fetch; window.fetch = () => Promise.reject(new TypeError('Failed to fetch')); }",
+    });
+    const offline = await submitAndRead();
+    check('a dead connection is reported as such',
+      /can't reach the server/i.test(offline.errorText), offline.errorText || '(no banner)');
+    await shot('13-signup-network.png');
+
+    /* the server falls over */
+    await tool('browser_evaluate', {
+      function: "() => { window.fetch = () => Promise.resolve(new Response('', { status: 500 })); }",
+    });
+    const broke = await submitAndRead();
+    check('a server failure says the failure is ours',
+      /failed on our side/i.test(broke.errorText), broke.errorText || '(no banner)');
+    await shot('14-signup-server-error.png');
+
+    await tool('browser_evaluate', {
+      function: "() => { if (window.__fetch) window.fetch = window.__fetch; }",
+    });
+
     /* 4. the account area */
     await tool('browser_navigate', { url: `${BASE}/account` });
     const account = await evaluate(`() => ({
@@ -345,8 +458,13 @@ async function main() {
 
     /* 5. nothing threw along the way */
     const consoleErrors = await tool('browser_console_messages', { level: 'error', all: true });
-    check('no console errors', /Errors: 0/.test(consoleErrors) || /^$/.test(consoleErrors.trim()),
-      consoleErrors.split('\n').pop());
+    // A handled 4xx still lands in the browser's resource log; those are
+    // expected here (the duplicate-account test asks for one). JS errors are not.
+    const scriptErrors = consoleErrors
+      .split('\n')
+      .filter(line => /\[ERROR\]/.test(line) && !/Failed to load resource/.test(line));
+    check('no JavaScript errors in the console', scriptErrors.length === 0,
+      scriptErrors[0] || 'clean');
   } finally {
     await tool('browser_close', {}).catch(() => {});
     child.kill();

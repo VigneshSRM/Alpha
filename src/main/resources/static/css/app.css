@@ -339,6 +339,19 @@ ul { padding: 0; list-style: none; }
 
 .flash svg { flex: none; margin-top: 1px; }
 
+.flash__body { display: grid; gap: 6px; justify-items: start; }
+
+.flash__link {
+  color: inherit;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.flash__link[hidden] { display: none; }
+
+.dash__notice { margin-bottom: 18px; }
+
 .flash--error {
   background: rgba(122, 26, 12, 0.42);
   border-color: var(--danger-line);

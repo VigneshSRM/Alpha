@@ -42,7 +42,21 @@
     return document.querySelector("[data-success]");
   }
 
-  function showFlash(message, kind) {
+  function setFlashLink(box, options) {
+    var link = box.querySelector("[data-flash-link]");
+    if (!link) return;
+    var action = options && options.link ? options.link : options;
+    if (action && action.href) {
+      link.href = action.href;
+      link.textContent = action.label || "Continue";
+      link.hidden = false;
+    } else {
+      link.hidden = true;
+      link.removeAttribute("href");
+    }
+  }
+
+  function showFlash(message, kind, options) {
     var box;
     if (kind === "success") {
       box = document.querySelector("[data-success]");
@@ -61,6 +75,7 @@
     if (!box) return;
     var text = box.querySelector("[data-flash-text], [data-success-text]");
     if (text) text.textContent = message;
+    setFlashLink(box, options);
     box.hidden = false;
     try {
       box.scrollIntoView({ block: "nearest", behavior: "smooth" });
@@ -75,6 +90,7 @@
       box.hidden = true;
       var text = box.querySelector("[data-flash-text]");
       if (text) text.textContent = "";
+      setFlashLink(box, null);
     }
   }
 
@@ -174,7 +190,18 @@
   /* ------------------------------------------------------------------ */
   /* Submit helper                                                      */
   /* ------------------------------------------------------------------ */
+  var REQUEST_TIMEOUT_MS = 20000;
+
   function postJson(url, formData, csrfToken) {
+    var controller = typeof AbortController === "function" ? new AbortController() : null;
+    var timer = controller
+      ? window.setTimeout(function () { controller.abort(); }, REQUEST_TIMEOUT_MS)
+      : 0;
+
+    function stop() {
+      if (timer) window.clearTimeout(timer);
+    }
+
     return fetch(url, {
       method: "POST",
       headers: {
@@ -183,13 +210,79 @@
         "X-CSRF-Token": csrfToken || ""
       },
       body: formData,
-      credentials: "same-origin"
-    }).then(function (response) {
-      return response
-        .json()
-        .catch(function () { return { message: "Unexpected response from the server." }; })
-        .then(function (data) { return { status: response.status, data: data }; });
-    });
+      credentials: "same-origin",
+      signal: controller ? controller.signal : undefined
+    })
+      .then(function (response) {
+        // A proxy or an error page can answer with HTML; keep the status.
+        return response
+          .json()
+          .catch(function () { return { message: "" }; })
+          .then(function (data) {
+            stop();
+            return { status: response.status, data: data };
+          });
+      }, function (error) {
+        stop();
+        throw error;
+      });
+  }
+
+  /* Why a submission failed, in words a person can act on. */
+  function failureMessage(mode, result) {
+    var status = result.status;
+    var data = result.data || {};
+    var code = data.code || "";
+    var said = (data.message || "").trim();
+    var noun = mode === "signup" ? "Registration" : "Sign-in";
+
+    if (code === "user_exists" || status === 409) {
+      return {
+        text: said || "That e-mail address is already registered.",
+        link: { href: "/login", label: "Sign in instead" }
+      };
+    }
+    if (code === "signup_closed") {
+      return {
+        text: said || "Self-service registration is closed.",
+        link: { href: "/login", label: "Back to sign in" }
+      };
+    }
+    if (code === "rate_limited" || status === 429) {
+      return { text: said || "Too many attempts. Please wait a moment and try again." };
+    }
+    if (code === "csrf") {
+      return { text: said || "Your session expired. Please reload the page and try again." };
+    }
+    if (code === "validation" || status === 422) {
+      return { text: said || "Some details need fixing — see the notes under the fields." };
+    }
+    if (code === "invalid_credentials" || status === 401) {
+      return { text: said || "That e-mail and password do not match." };
+    }
+    if (code === "account_disabled" || status === 403) {
+      return { text: said || "This account is not available. Please contact the IT desk." };
+    }
+    if (status >= 500) {
+      return { text: noun + " failed on our side — the server could not finish it. Please try again in a moment." };
+    }
+    if (status === 404) {
+      return { text: "The server has no " + noun.toLowerCase() + " endpoint. Please reload the page." };
+    }
+    if (!status) {
+      return { text: "No answer from the server. Check your connection and try again." };
+    }
+    return { text: said || noun + " failed (the server answered " + status + ")." };
+  }
+
+  function networkMessage(error) {
+    if (error && error.name === "AbortError") {
+      return "The server took too long to answer. Please try again.";
+    }
+    if (typeof navigator !== "undefined" && navigator.onLine === false) {
+      return "You appear to be offline. Reconnect and try again.";
+    }
+    return "Can't reach the server. Check your connection and try again.";
   }
 
   function setLoading(button, state, busyLabel) {
@@ -907,11 +1000,19 @@
 
           if (data.ok) {
             setLoading(submitBtn, false);
-            showFlash(data.message || "Success. Redirecting…", "success");
+            showFlash(
+              data.message
+                || (mode === "signup"
+                  ? "Account created. Taking you to your dashboard…"
+                  : "Signed in. Taking you to your dashboard…"),
+              "success"
+            );
             if (passwordInput) passwordInput.blur();
+            if (submitBtn) submitBtn.disabled = true;
+            /* Long enough to read the confirmation before the page moves. */
             window.setTimeout(function () {
               window.location.assign(data.redirect || "/dashboard");
-            }, 550);
+            }, 2000);
             return;
           }
 
@@ -936,11 +1037,18 @@
             }
           });
 
-          showFlash(data.message || "Please check the details and try again.", "error");
+          var failure = failureMessage(mode, result);
+          var summary = failure.text;
+          var first = Object.keys(errors)[0];
+          // Field notes already say what is wrong; the banner says why it failed.
+          if (data.code === "validation" && first) {
+            summary = "That did not go through — " + errors[first];
+          }
+          showFlash(summary, "error", failure);
         })
-        .catch(function () {
+        .catch(function (error) {
           setLoading(submitBtn, false);
-          showFlash("Network error. Please check your connection and try again.", "error");
+          showFlash(networkMessage(error), "error");
         });
     });
 

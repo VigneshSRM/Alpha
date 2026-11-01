@@ -13,6 +13,7 @@ import java.util.Map;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.GetMapping;
 
 /** The protected area. Spring Security has already rejected anonymous callers. */
@@ -29,7 +30,11 @@ public class DashboardController {
     }
 
     @GetMapping("/dashboard")
-    public String dashboard(Authentication authentication, HttpSession session, Model model) {
+    public String dashboard(
+            Authentication authentication,
+            HttpSession session,
+            @RequestParam(value = "welcome", required = false) String welcome,
+            Model model) {
         PortalUser user = (PortalUser) authentication.getPrincipal();
 
         Map<String, Object> account = new LinkedHashMap<>();
@@ -49,6 +54,11 @@ public class DashboardController {
         sessionInfo.put("logged_in_at", loggedInAt instanceof Long epoch
                 ? epoch
                 : Instant.now().getEpochSecond());
+
+        // A brand-new account lands here with ?welcome=1 and gets told so.
+        model.addAttribute("notice", welcome == null
+                ? ""
+                : "Your account is ready. Welcome to Alpha Group of India.");
 
         model.addAttribute("pageTitle", "Dashboard");
         model.addAttribute("account", account);

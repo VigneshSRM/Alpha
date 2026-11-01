@@ -22,7 +22,10 @@
              stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <circle cx="12" cy="12" r="9"/><path d="M12 8v5"/><path d="M12 16.5v.01"/>
         </svg>
-        <span data-flash-text th:text="${error}"></span>
+        <span class="flash__body">
+          <span data-flash-text th:text="${error}"></span>
+          <a class="flash__link" data-flash-link href="/login" hidden>Sign in</a>
+        </span>
       </div>
 
       <div class="flash flash--notice" role="status"

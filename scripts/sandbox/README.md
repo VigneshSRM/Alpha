@@ -8,7 +8,7 @@ framework imports — `policy/` and `util/` — run and answer a real browser:
 | --- | --- |
 | the sign-in and reset pages, the CSS and the JS | a directory of rendered pages (see below) |
 | `POST /api/password-check` | the repo's `PasswordPolicy.evaluate(...)`, same envelope as `PasswordCheckController` |
-| `POST /signup` | the repo's `PhoneNumbers.validate`, `Emails.isValid` and `PasswordPolicy.evaluate`, in the same order as `AuthController.signup` |
+| `POST /signup` | the repo's `PhoneNumbers.validate`, `Emails.isValid` and `PasswordPolicy.evaluate`, in the same order as `AuthController.signup`; e-mails taken during the run answer `409`, the way the unique index would |
 
 What is missing is the Spring wiring around those calls — request binding, CSRF,
 JPA, Spring Session — because Maven Central is unreachable from the sandbox

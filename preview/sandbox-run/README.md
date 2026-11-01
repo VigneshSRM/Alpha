@@ -8,6 +8,7 @@ the repository's own classes:
 | --- | --- |
 | typed a password, watched the `!` indicator | `policy/PasswordPolicy.evaluate(...)` over `POST /api/password-check` |
 | submitted the request-account form with 5 digits | `policy/PhoneNumbers.validate("IN", "98765")` over `POST /signup` |
+| submitted it twice with the same e-mail | the harness's duplicate check, standing in for the unique index (409) |
 | corrected the number and submitted again | the same call, now accepting it and answering E.164 |
 
 The pages themselves are the rendered Thymeleaf templates (see
@@ -49,6 +50,11 @@ failed.
 | `07-phone-search.png` | typing “united king” narrows the list to `+44 United Kingdom` |
 | `08-phone-gb.png` | after choosing it: the button reads `+44` and the hint switches to “10 digits for United Kingdom” |
 | `09-phone-mobile.png` | 390×844 with the list open — it stays inside the viewport, no sideways scroll |
+| `10-registered.png` | the server answered `200 {"ok":true,…}` — “Account created. Welcome to Alpha Group of India.” |
+| `11-account-welcome.png` | the redirect target carries `?welcome=1`, so the dashboard confirms it too |
+| `12-signup-duplicate.png` | the same address again: `409 user_exists`, the reason in the banner, the field flagged, and a “Sign in instead” link |
+| `13-signup-network.png` | `fetch` rejected — “Can't reach the server. Check your connection and try again.” |
+| `14-signup-server-error.png` | a `500` — “Registration failed on our side…”, not a silent spinner |
 
 ## Reproduce it
 
@@ -82,8 +88,13 @@ the country picker's contents, and the absence of stray banners. Last run:
 [PASS] a country whose name starts with the query is ranked first — 2 matches, first: +91 India
 [PASS] India can be picked again with the keyboard — IN
 [PASS] a too-short number is flagged while typing — Keep going — India numbers have 10 digits.
+[PASS] a successful registration says so — Account created. Welcome to Alpha Group of India.
+[PASS] the new account lands on the dashboard with a welcome notice — /dashboard?welcome=1
+[PASS] a duplicate e-mail is explained, with a way out — That e-mail address is already registered.
+[PASS] a dead connection is reported as such — Can't reach the server. Check your connection and try again.
+[PASS] a server failure says the failure is ours — Registration failed on our side — the server could not finish it.
 ...
-30 checks, 0 failures
+35 checks, 0 failures
 ```
 
 ## To run the actual application

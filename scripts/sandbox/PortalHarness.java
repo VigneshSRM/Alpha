@@ -34,6 +34,10 @@ public final class PortalHarness {
 
     /** Directory holding the rendered pages; args[1] overrides it. */
     private static Path site = Path.of("/tmp/site");
+
+    /** Accounts taken during this run, so a duplicate behaves like the real one. */
+    private static final java.util.Set<String> REGISTERED =
+            java.util.concurrent.ConcurrentHashMap.newKeySet();
     private static final String CSRF = "b1a6c0d2-7e4f-4a91-9c3b-5d8e2f7a1c60";
 
     public static void main(String[] args) throws IOException {
@@ -175,18 +179,33 @@ public final class PortalHarness {
             return;
         }
 
-        json(ex, 200, "{\"ok\":true,\"message\":\"Welcome to Alpha Group of India.\","
-                + "\"redirect\":\"/dashboard\"}");
+        if (!REGISTERED.add(email.toLowerCase(Locale.ROOT))) {
+            String taken = "That e-mail address is already registered. Sign in instead.";
+            System.out.printf(Locale.ROOT, "POST /signup  %s -> 409 user_exists%n", email);
+            json(ex, 409, "{\"ok\":false,\"code\":\"user_exists\",\"message\":\"" + escape(taken)
+                    + "\",\"errors\":{\"email\":\"" + escape(taken)
+                    + "\"},\"field\":\"email\"}");
+            return;
+        }
+
+        System.out.printf(Locale.ROOT, "POST /signup  %s -> 201 registered%n", email);
+        json(ex, 200, "{\"ok\":true,\"code\":\"registered\","
+                + "\"message\":\"Account created. Welcome to Alpha Group of India.\","
+                + "\"redirect\":\"/dashboard?welcome=1\"}");
     }
 
     /* ---- static files ---------------------------------------------------- */
 
     private static void statics(HttpExchange ex) throws IOException {
         String path = ex.getRequestURI().getPath();
+        String query = ex.getRequestURI().getQuery();
         String file = switch (path) {
+            case "/dashboard" -> query != null && query.contains("welcome=1")
+                    ? "dashboard-welcome.html"
+                    : "dashboard.html";
             case "/", "/login" -> "login.html";
             case "/signup" -> "signup.html";
-            case "/dashboard", "/account" -> "dashboard.html";
+            case "/account" -> "dashboard.html";
             case "/reset-password" -> "reset-password.html";
             default -> path.replaceFirst("^/", "");
         };

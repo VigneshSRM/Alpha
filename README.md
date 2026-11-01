@@ -111,6 +111,12 @@ Flyway owns the schema. `spring.jpa.hibernate.ddl-auto=none` — nothing is crea
 
 To add a change, drop a new `V5__…sql` in `db/migration`; never edit an applied file.
 
+The browser is told what happened, in words: a successful registration says so
+and lands on `/dashboard?welcome=1`; a duplicate e-mail, a closed sign-up, an
+expired CSRF token, a 500 or a dead connection each get their own message, with
+a link where one helps. `auth.js` only paints what the server decided — see
+`failureMessage()` in `static/js/auth.js`.
+
 ## 6. Routes
 
 | Method | Path | Access | Purpose |
