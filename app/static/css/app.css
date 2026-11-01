@@ -518,14 +518,6 @@ ul { padding: 0; list-style: none; }
   color: var(--danger);
 }
 
-.field__note {
-  display: block;
-  font-size: 0.7rem;
-  line-height: 1.4;
-  color: var(--text-muted);
-  letter-spacing: 0.01em;
-}
-
 /* --- the "!" popover ----------------------------------------------------- */
 .policy-pop {
   /* Compact overlay so the Sign in button never gets pushed off-screen. */
@@ -1134,7 +1126,6 @@ code {
   .stage { padding-top: 18px; row-gap: 16px; padding-bottom: 22px; }
   .stage__col { gap: 14px; max-width: 100%; }
   .access__brand { width: min(190px, 58%); }
-  .field__note { font-size: 0.68rem; }
   .access { padding: 20px; border-radius: 18px; }
   .policy-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .policy-columns { grid-template-columns: 1fr; }

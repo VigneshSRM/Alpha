@@ -151,7 +151,10 @@ class AuthRouteTests(unittest.TestCase):
         self.assertIn('id="policyInfoBtn"', html)
         self.assertIn('data-state="empty"', html)
         self.assertIn('id="policyPopover"', html)
-        self.assertIn("12+ characters · upper &amp; lower case · 2 numbers · 2 symbols", html)
+        # No requirement caption under the password field any more — the
+        # details live in the "!" hover popover only.
+        self.assertNotIn("12+ characters", html)
+        self.assertNotIn("field__note", html)
         self.assertIn("At least 12 characters", html)
         self.assertIn('id="togglePassword"', html)
         self.assertIn('data-check-endpoint="/api/password-check"', html)
