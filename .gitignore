@@ -11,3 +11,6 @@ target/
 # Secrets — never commit real database credentials
 .env
 .env.local
+
+# Playwright MCP writes accessibility snapshots here on every run
+.playwright-mcp/
