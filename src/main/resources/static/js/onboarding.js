@@ -40,6 +40,21 @@
     });
   }
 
+  /* The food-licence block belongs to restaurants only. The server decides the
+     first time (th:hidden); from then on the radios drive it. */
+  var licence = form.querySelector("[data-fssai]");
+
+  function syncLicence() {
+    if (!licence) return;
+    var chosen = form.querySelector('input[name="vertical"]:checked');
+    licence.hidden = !(chosen && chosen.value === "Restaurant");
+  }
+
+  form.querySelectorAll('input[name="vertical"]').forEach(function (radio) {
+    radio.addEventListener("change", syncLicence);
+  });
+  syncLicence();
+
   /* A field the server complained about clears as soon as it is edited —
      the real answer arrives with the next submit. */
   form.querySelectorAll(".field.is-invalid").forEach(function (field) {

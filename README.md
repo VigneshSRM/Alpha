@@ -109,6 +109,7 @@ Flyway owns the schema. `spring.jpa.hibernate.ddl-auto=none` — nothing is crea
 | `V3__password_reset_token.sql` | single-use reset tokens, stored as SHA-256 only |
 | `V4__portal_user_phone.sql` | `phone` — E.164 mobile number captured at sign-up |
 | `V5__business_profile.sql` | `business_profile` — one row per account: vertical, name, phone, type, GSTIN, address, and the accounting preferences |
+| `V6__business_profile_fssai.sql` | `fssai`, `fssai_expiry` — the optional food licence a restaurant may keep |
 
 To add a change, drop a new `V5__…sql` in `db/migration`; never edit an applied file.
 
@@ -142,7 +143,12 @@ base currency, fiscal year, inventory start date). The lists live in
 `onboarding/OnboardingRules.java` — 18 business types, 36 states and union
 territories, 12 fiscal-year starts — and the same class validates the POST, so
 the HTML and the rulebook cannot drift. GSTIN is optional and checked against
-the 15-character format only when it is filled in. Saving writes one
+the 15-character format only when it is filled in.
+
+Choosing **Restaurant** reveals a *Food licence* block — **FSSAI Number**
+(optional, exactly 14 digits, spaces and dashes tolerated) and **FSSAI Expiry
+Date** (optional). Choosing **Retail** hides it again, and the server drops both
+values if a profile changes to retail, so a shop can never carry a food licence. Saving writes one
 `business_profile` row and redirects to `/dashboard?welcome=1`, which is where
 the welcome text now lives.
 

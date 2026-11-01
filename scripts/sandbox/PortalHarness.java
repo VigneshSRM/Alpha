@@ -215,8 +215,26 @@ public final class PortalHarness {
             // The real controller re-renders the page with the errors bound to
             // each field. Here the same markup is edited in place.
             String html = Files.readString(site.resolve("onboarding.html"), StandardCharsets.UTF_8);
+            // Re-render the page the way the template does: the chosen vertical
+            // is ticked again, and a restaurant gets its licence block back.
+            String vertical = form.getOrDefault("vertical", "");
+            if (OnboardingRules.RESTAURANT.equals(vertical)) {
+                html = html.replace(
+                        "<input type=\"radio\" name=\"vertical\" value=\"Restaurant\">",
+                        "<input type=\"radio\" name=\"vertical\" value=\"Restaurant\" checked>");
+                html = html.replace("<div class=\"onb__extra\" data-fssai hidden>",
+                        "<div class=\"onb__extra\" data-fssai>");
+            }
             for (var entry : errors.entrySet()) {
                 html = markField(html, entry.getKey(), entry.getValue());
+            }
+            for (String key : new String[] {"businessName", "phone", "addressLine1",
+                    "addressLine2", "city", "pincode", "gstin", "fssai", "fssaiExpiry",
+                    "inventoryStartDate"}) {
+                html = restoreValue(html, key, form.getOrDefault(key, ""));
+            }
+            for (String key : new String[] {"businessType", "state"}) {
+                html = restoreChoice(html, key, form.getOrDefault(key, ""));
             }
             byte[] data = html.getBytes(StandardCharsets.UTF_8);
             ex.getResponseHeaders().set("Content-Type", "text/html; charset=utf-8");
@@ -233,6 +251,48 @@ public final class PortalHarness {
         ex.getResponseHeaders().set("Cache-Control", "no-store");
         ex.sendResponseHeaders(303, -1);
         ex.close();
+    }
+
+    /** Ticks the submitted option again after a bad submit. */
+    private static String restoreChoice(String html, String id, String value) {
+        if (value.isEmpty()) return html;
+        int at = html.indexOf("id=\"" + id + "\"");
+        if (at < 0) return html;
+        int open = html.lastIndexOf("<select", at);
+        int close = html.indexOf("</select>", at);
+        if (open < 0 || close < 0) return html;
+
+        String block = html.substring(open, close);
+        // Option values are HTML-escaped: "Food & Beverage" is "Food &amp; Beverage".
+        String needle = "<option value=\"" + value + "\"";
+        int optionAt = block.indexOf(needle);
+        if (optionAt < 0) {
+            needle = "<option value=\"" + value.replace("&", "&amp;") + "\"";
+            optionAt = block.indexOf(needle);
+        }
+        if (optionAt < 0) return html;
+        int tagEnd = block.indexOf('>', optionAt);
+        String tag = block.substring(optionAt, tagEnd);
+        if (tag.contains("selected")) return html;
+
+        String fixed = block.substring(0, optionAt) + tag + " selected" + block.substring(tagEnd);
+        return html.substring(0, open) + fixed + html.substring(close);
+    }
+
+    /** Puts a submitted value back into its input after a bad submit. */
+    private static String restoreValue(String html, String id, String value) {
+        if (value.isEmpty()) return html;
+        String marker = "id=\"" + id + "\"";
+        int at = html.indexOf(marker);
+        if (at < 0) return html;
+        int open = html.lastIndexOf("<input", at);
+        int close = html.indexOf('>', at);
+        if (open < 0 || close < 0) return html;
+        String tag = html.substring(open, close + 1);
+        String restored = tag.contains("value=\"")
+                ? tag.replaceAll("value=\"[^\"]*\"", "value=\"" + value + "\"")
+                : tag.replace(">", " value=\"" + value + "\">");
+        return html.substring(0, open) + restored + html.substring(close + 1);
     }
 
     /** Paints one field the way the Thymeleaf template does on a bad submit. */

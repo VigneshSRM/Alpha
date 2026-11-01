@@ -57,6 +57,8 @@ failed.
 | `14-signup-server-error.png` | a `500` — “Registration failed on our side…”, not a silent spinner |
 | `15-onboarding.png` | “Set up your Business profile”: vertical cards, 236 dial codes, 18 business types, 36 states, GSTIN optional, and the footer in the right-hand corner |
 | `16-onboarding-errors.png` | an empty submit: `422` from `OnboardingRules`, nine fields marked with their own message — and no banner repeating them |
+| `17-onboarding-restaurant.png` | Retail chosen first, then Restaurant: the Food licence block appears with the optional 14-digit FSSAI number and an expiry date |
+| `18-onboarding-fssai-error.png` | thirteen digits submitted: `422` — “An FSSAI licence number is exactly 14 digits.”, the number still in the field |
 
 ## Reproduce it
 
@@ -99,14 +101,22 @@ the country picker's contents, and the absence of stray banners. Last run:
 [PASS] GSTIN is labelled optional — GSTIN Number (Optional)
 [PASS] required fields are marked before the first submit — 12 marks, 11 aria-required
 [PASS] the footer sits in the right-hand corner — 64px of breathing room at the right edge
-[PASS] an empty profile is answered field by field — 9 fields marked, 9 messages
+[PASS] the food licence stays out of the way for a shop — hidden
+[PASS] choosing Restaurant reveals the FSSAI number and expiry — shown
+[PASS] the FSSAI number takes exactly 14 digits — maxlength 14, hint “14 digits”
+[PASS] the expiry date is a date field — date
+[PASS] both licence fields are marked optional — true / true
+[PASS] choosing Retail hides the food licence again — hidden
+[PASS] an empty profile is answered field by field — 8 fields marked, 8 messages
 [PASS] no banner repeats the field messages on the profile page — (none)
+[PASS] a 13-digit FSSAI number is refused by the server — An FSSAI licence number is exactly 14 digits.
+[PASS] the licence block stays open with the number still in it — open — “1234567890123”
 [PASS] the profile saves and the dashboard opens — /dashboard?welcome=1&business=Alpha%20Retail…
 [PASS] a duplicate e-mail is explained, with a way out — That e-mail address is already registered.
 [PASS] a dead connection is reported as such — Can't reach the server. Check your connection and try again.
 [PASS] a server failure says the failure is ours — Registration failed on our side — the server could not finish it.
 ...
-45 checks, 0 failures
+53 checks, 0 failures
 ```
 
 ## To run the actual application

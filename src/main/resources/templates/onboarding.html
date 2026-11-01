@@ -141,6 +141,42 @@
         </div>
         <p class="field__error" th:text="${errors['gstin']}"></p>
       </div>
+
+      <!-- A restaurant keeps a food licence; a shop does not. Optional, both. -->
+      <div class="onb__extra" data-fssai
+           th:hidden="${form['vertical'] != 'Restaurant'}">
+        <p class="onb__extra-title">
+          Food licence
+          <span class="onb__legend-note">Only for restaurants — leave both blank if you do not have one</span>
+        </p>
+
+        <div class="onb__fields">
+          <div class="field" data-field="fssai">
+            <label class="field__label" for="fssai">
+              FSSAI Number <span class="field__tag">(Optional)</span>
+            </label>
+            <div class="control">
+              <input class="control__input" id="fssai" name="fssai" type="text"
+                     inputmode="numeric" maxlength="14" autocomplete="off" spellcheck="false"
+                     placeholder="14 digits, e.g. 12424031000123"
+                     th:value="${form['fssai']}" aria-describedby="fssaiHint">
+            </div>
+            <p class="field__hint" id="fssaiHint">14 digits</p>
+            <p class="field__error" th:text="${errors['fssai']}"></p>
+          </div>
+
+          <div class="field" data-field="fssaiExpiry">
+            <label class="field__label" for="fssaiExpiry">
+              FSSAI Expiry Date <span class="field__tag">(Optional)</span>
+            </label>
+            <div class="control">
+              <input class="control__input" id="fssaiExpiry" name="fssaiExpiry" type="date"
+                     th:value="${form['fssaiExpiry']}">
+            </div>
+            <p class="field__error" th:text="${errors['fssaiExpiry']}"></p>
+          </div>
+        </div>
+      </div>
     </section>
 
     <!-- ---------------------------------------------------------------- -->

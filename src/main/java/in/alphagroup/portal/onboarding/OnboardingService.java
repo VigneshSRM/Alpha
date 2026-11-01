@@ -37,6 +37,15 @@ public class OnboardingService {
         profile.setCountry(OnboardingRules.value(form, "country").toUpperCase());
         profile.setState(OnboardingRules.value(form, "state"));
         profile.setGstin(emptyToNull(OnboardingRules.value(form, "gstin").toUpperCase()));
+        // A food licence belongs to a restaurant; anything else clears it.
+        if (OnboardingRules.RESTAURANT.equals(profile.getVertical())) {
+            profile.setFssai(emptyToNull(
+                    OnboardingRules.value(form, "fssai").replaceAll("[\\s-]", "")));
+            profile.setFssaiExpiry(emptyToDate(OnboardingRules.value(form, "fssaiExpiry")));
+        } else {
+            profile.setFssai(null);
+            profile.setFssaiExpiry(null);
+        }
         profile.setAddressLine1(OnboardingRules.value(form, "addressLine1"));
         profile.setAddressLine2(emptyToNull(OnboardingRules.value(form, "addressLine2")));
         profile.setCity(OnboardingRules.value(form, "city"));
@@ -63,6 +72,8 @@ public class OnboardingService {
         form.put("country", "IN");
         form.put("state", "");
         form.put("gstin", "");
+        form.put("fssai", "");
+        form.put("fssaiExpiry", "");
         form.put("addressLine1", "");
         form.put("addressLine2", "");
         form.put("city", "");
@@ -88,6 +99,9 @@ public class OnboardingService {
         form.put("country", profile.getCountry());
         form.put("state", profile.getState());
         form.put("gstin", profile.getGstin() == null ? "" : profile.getGstin());
+        form.put("fssai", profile.getFssai() == null ? "" : profile.getFssai());
+        form.put("fssaiExpiry", profile.getFssaiExpiry() == null
+                ? "" : profile.getFssaiExpiry().toString());
         form.put("addressLine1", profile.getAddressLine1());
         form.put("addressLine2", profile.getAddressLine2() == null ? "" : profile.getAddressLine2());
         form.put("city", profile.getCity());
@@ -103,5 +117,9 @@ public class OnboardingService {
 
     private static String emptyToNull(String value) {
         return value.isEmpty() ? null : value;
+    }
+
+    private static LocalDate emptyToDate(String value) {
+        return value.isEmpty() ? null : LocalDate.parse(value);
     }
 }

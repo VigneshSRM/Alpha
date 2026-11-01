@@ -444,9 +444,61 @@ async function main() {
       `${onboard.footerTextGap}px of breathing room at the right edge`);
     await shot('15-onboarding.png', true);
 
+    /* the FSSAI block belongs to a restaurant, and only to a restaurant */
+    const retailView = await evaluate(`() => ({
+      hidden: document.querySelector('[data-fssai]').hidden,
+    })`);
+    check('the food licence stays out of the way for a shop', retailView.hidden === true,
+      retailView.hidden ? 'hidden' : 'visible');
+
+    await evaluate(`() => {
+      const radio = document.querySelector('input[name="vertical"][value="Restaurant"]');
+      radio.checked = true;
+      radio.dispatchEvent(new Event('change', { bubbles: true }));
+      return 'restaurant';
+    }`);
+    const licence = await evaluate(`() => {
+      const block = document.querySelector('[data-fssai]');
+      const number = document.getElementById('fssai');
+      const expiry = document.getElementById('fssaiExpiry');
+      return {
+        shown: !block.hidden,
+        maxLength: number.maxLength,
+        hint: (document.getElementById('fssaiHint') || {}).textContent || '',
+        expiryType: expiry.type,
+        numberOptional: /optional/i.test(
+          document.querySelector('label[for="fssai"]').textContent),
+        expiryOptional: /optional/i.test(
+          document.querySelector('label[for="fssaiExpiry"]').textContent),
+      };
+    }`);
+    check('choosing Restaurant reveals the FSSAI number and expiry',
+      licence.shown === true, licence.shown ? 'shown' : 'still hidden');
+    check('the FSSAI number takes exactly 14 digits',
+      licence.maxLength === 14 && /14 digits/.test(licence.hint),
+      `maxlength ${licence.maxLength}, hint “${licence.hint.trim()}”`);
+    check('the expiry date is a date field', licence.expiryType === 'date', licence.expiryType);
+    check('both licence fields are marked optional',
+      licence.numberOptional && licence.expiryOptional,
+      `${licence.numberOptional} / ${licence.expiryOptional}`);
+    await shot('17-onboarding-restaurant.png', true);
+
+    await evaluate(`() => {
+      const radio = document.querySelector('input[name="vertical"][value="Retail"]');
+      radio.checked = true;
+      radio.dispatchEvent(new Event('change', { bubbles: true }));
+      return 'retail';
+    }`);
+    const backToRetail = await evaluate(`() => document.querySelector('[data-fssai]').hidden`);
+    check('choosing Retail hides the food licence again', backToRetail === true,
+      backToRetail ? 'hidden' : 'visible');
+
+
     /* an empty submit is answered field by field, with no banner on top */
     await evaluate(`() => {
-      document.getElementById('onboardingForm').requestSubmit();
+      const form = document.getElementById('onboardingForm');
+      if (!form) return 'gone';
+      form.requestSubmit();
       return 'submitted';
     }`);
     await tool('browser_wait_for', { time: 0.6 });
@@ -465,16 +517,18 @@ async function main() {
       emptyOnboarding.banner.trim() === '', emptyOnboarding.banner.trim() || '(none)');
     await shot('16-onboarding-errors.png', true);
 
-    /* the profile saves and the dashboard opens */
+    /* a restaurant profile: the server judges the licence number */
     await tool('browser_navigate', { url: `${BASE}/onboarding` });
-    await evaluate(`() => {
+    const fillProfile = `() => {
       const set = (id, value) => {
         const el = document.getElementById(id);
         el.value = value;
         el.dispatchEvent(new Event('change', { bubbles: true }));
       };
-      document.querySelector('input[name="vertical"][value="Retail"]').checked = true;
-      set('businessName', 'Alpha Retail — Anna Nagar');
+      const radio = document.querySelector('input[name="vertical"][value="Restaurant"]');
+      radio.checked = true;
+      radio.dispatchEvent(new Event('change', { bubbles: true }));
+      set('businessName', 'Alpha Cafe — Anna Nagar');
       set('phone', '9876543210');
       set('businessType', 'Food & Beverage');
       set('state', 'Tamil Nadu');
@@ -483,9 +537,41 @@ async function main() {
       set('pincode', '600040');
       set('inventoryStartDate', '2026-04-01');
       return 'filled';
-    }`);
+    }`;
+    await evaluate(fillProfile);
     await evaluate(`() => {
-      document.getElementById('onboardingForm').requestSubmit();
+      const form = document.getElementById('onboardingForm');
+      if (!form) return 'gone';
+      document.getElementById('fssai').value = '1234567890123';
+      document.getElementById('fssaiExpiry').value = '2027-03-31';
+      form.requestSubmit();
+      return 'submitted';
+    }`);
+    await tool('browser_wait_for', { time: 0.8 });
+    const shortLicence = await evaluate(`() => ({
+      path: location.pathname,
+      flagged: (document.querySelector('[data-field="fssai"]') || {})
+        .classList.contains('is-invalid'),
+      message: (document.querySelector('[data-field="fssai"] .field__error') || {})
+        .textContent.trim(),
+      blockShown: !document.querySelector('[data-fssai]').hidden,
+      kept: (document.getElementById('fssai') || {}).value || '',
+    })`);
+    check('a 13-digit FSSAI number is refused by the server',
+      shortLicence.path === '/onboarding' && shortLicence.flagged
+        && /14 digits/i.test(shortLicence.message),
+      shortLicence.message || '(no message)');
+    check('the licence block stays open with the number still in it',
+      shortLicence.blockShown === true && shortLicence.kept === '1234567890123',
+      `${shortLicence.blockShown ? 'open' : 'closed'} — “${shortLicence.kept}”`);
+    await shot('18-onboarding-fssai-error.png', true);
+
+    /* now the real number */
+    await evaluate(`() => {
+      const form = document.getElementById('onboardingForm');
+      if (!form) return 'gone';
+      document.getElementById('fssai').value = '12424031000123';
+      form.requestSubmit();
       return 'submitted';
     }`);
     const afterOnboarding = await waitForPath('/dashboard');

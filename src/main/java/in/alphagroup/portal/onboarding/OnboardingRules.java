@@ -94,6 +94,12 @@ public final class OnboardingRules {
 
     private static final Pattern PINCODE = Pattern.compile("^[1-9][0-9]{5}$");
 
+    /** The FSSAI licence number is exactly fourteen digits. */
+    private static final Pattern FSSAI = Pattern.compile("^[0-9]{14}$");
+
+    /** Only a restaurant carries a food licence. */
+    public static final String RESTAURANT = "Restaurant";
+
     /** Label for a fiscal year that starts in {@code month}. */
     public static String fiscalYearLabel(int month) {
         String start = MONTHS.get(month - 1);
@@ -157,6 +163,22 @@ public final class OnboardingRules {
         String gstin = value(form, "gstin").toUpperCase(Locale.ROOT);
         if (!gstin.isEmpty() && !GSTIN.matcher(gstin).matches()) {
             errors.put("gstin", "A GSTIN is 15 characters, e.g. 22AAAAA0000A1Z5.");
+        }
+
+        // Optional, and only asked of a restaurant.
+        if (RESTAURANT.equals(vertical)) {
+            String fssai = value(form, "fssai").replaceAll("[\\s-]", "");
+            if (!fssai.isEmpty() && !FSSAI.matcher(fssai).matches()) {
+                errors.put("fssai", "An FSSAI licence number is exactly 14 digits.");
+            }
+            String expiry = value(form, "fssaiExpiry");
+            if (!expiry.isEmpty()) {
+                try {
+                    LocalDate.parse(expiry);
+                } catch (DateTimeParseException malformed) {
+                    errors.put("fssaiExpiry", "That date could not be read.");
+                }
+            }
         }
 
         String line1 = value(form, "addressLine1");

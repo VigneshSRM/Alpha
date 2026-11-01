@@ -48,6 +48,13 @@ public class BusinessProfile {
     @Column(length = 15)
     private String gstin;
 
+    /** Fourteen digits, restaurants only, optional. */
+    @Column(length = 14)
+    private String fssai;
+
+    @Column(name = "fssai_expiry")
+    private LocalDate fssaiExpiry;
+
     @Column(name = "address_line1", nullable = false, length = 160)
     private String addressLine1;
 
@@ -127,6 +134,14 @@ public class BusinessProfile {
         return gstin;
     }
 
+    public String getFssai() {
+        return fssai;
+    }
+
+    public LocalDate getFssaiExpiry() {
+        return fssaiExpiry;
+    }
+
     public String getAddressLine1() {
         return addressLine1;
     }
@@ -197,6 +212,14 @@ public class BusinessProfile {
 
     public void setGstin(String gstin) {
         this.gstin = gstin;
+    }
+
+    public void setFssai(String fssai) {
+        this.fssai = fssai;
+    }
+
+    public void setFssaiExpiry(LocalDate fssaiExpiry) {
+        this.fssaiExpiry = fssaiExpiry;
     }
 
     public void setAddressLine1(String addressLine1) {

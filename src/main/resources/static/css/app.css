@@ -1415,6 +1415,30 @@ code {
   transform: rotate(-45deg) translateX(-2px);
 }
 
+/* The restaurant-only block spans the section and hides itself for retail. */
+.onb__extra {
+  grid-column: 1 / -1;
+  padding: 14px 16px 16px;
+  border: 1px solid rgba(255, 215, 0, 0.28);
+  border-radius: var(--radius);
+  background: rgba(255, 215, 0, 0.05);
+}
+
+.onb__extra[hidden] { display: none; }
+
+.onb__extra-title {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 2px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+
 .field--full { grid-column: 1 / -1; }
 
 /* The onboarding phone picker carries its own dial code, so it stays narrow. */
