@@ -83,6 +83,15 @@ const noStrayBanner = `() => {
 }`;
 
 const failures = [];
+const refForText = (snapshot, fragment) => {
+  for (const line of snapshot.split('\n')) {
+    if (!line.includes(fragment)) continue;
+    const m = line.match(/\[ref=([a-zA-Z0-9]+)\]/);
+    if (m) return m[1];
+  }
+  throw new Error(`no control containing "${fragment}" in the accessibility tree`);
+};
+
 const check = (label, condition, detail) => {
   const mark = condition ? 'PASS' : 'FAIL';
   console.log(`  [${mark}] ${label}${detail ? ' — ' + detail : ''}`);
@@ -139,28 +148,85 @@ async function main() {
     check('no stray error banner above the e-mail field (sign-up)',
       (await evaluate(noStrayBanner)) !== 'VISIBLE');
 
-    /* 2b. the mobile number: every country offered, digits checked */
+    /* 2b. the mobile number: a short dial-code button, every country offered */
     snap = await tool('browser_snapshot', {});
     const picker = await evaluate(`() => {
       const select = document.getElementById('country_code');
+      const button = document.querySelector('.picker__button');
       const option = select.options[select.selectedIndex];
+      const control = document.getElementById('phone').closest('.control');
       return {
         count: select.options.length,
         iso: option.value,
         label: option.textContent.trim(),
-        dial: option.dataset.digits,
-        name: select.getAttribute('aria-label'),
+        caption: button ? button.textContent.trim() : '(no button)',
+        name: button ? button.getAttribute('aria-label') : '',
+        buttonW: button ? Math.round(button.getBoundingClientRect().width) : 0,
+        controlW: Math.round(control.getBoundingClientRect().width),
         hint: document.getElementById('phoneHint').textContent.trim(),
       };
     }`);
     check('country picker lists every country', picker.count >= 230, `${picker.count} options`);
     check('India is preselected with its dial code',
       picker.iso === 'IN' && picker.label.includes('+91'), `${picker.iso} ${picker.label}`);
+    check('the closed picker shows only the dial code', picker.caption === '+91', picker.caption);
+    check('the picker leaves most of the field to the number',
+      picker.buttonW / picker.controlW < 0.25, `${picker.buttonW}px of ${picker.controlW}px`);
     check('picker has an accessible name', picker.name === 'Country dialling code', picker.name);
     check('hint states the digits India uses', /10 digits/.test(picker.hint), picker.hint);
     check('mobile field has a clean accessible name',
       /textbox "Mobile number"/.test(snap),
       (snap.match(/textbox "(Mobile[^"]*|\+91[^"]*)"/) || [])[1]);
+
+    snap = await tool('browser_snapshot', {});
+    await tool('browser_click', {
+      element: 'Country dialling code', target: refFor(snap, 'Country dialling code'),
+    });
+    await tool('browser_wait_for', { time: 0.5 });
+    const opened = await evaluate(`() => ({
+      open: !document.querySelector('.picker__panel').hidden,
+      options: [...document.querySelectorAll('.picker__option')].filter(li => !li.hidden).length,
+      focus: document.activeElement.className,
+    })`);
+    check('the dial-code button opens the full country list',
+      opened.open && opened.options >= 230, `${opened.options} options`);
+    check('opening the list puts the cursor in its search box',
+      /picker__search/.test(opened.focus), opened.focus);
+
+    snap = await tool('browser_snapshot', {});
+    await tool('browser_type', {
+      element: 'Search country or dialling code',
+      target: refFor(snap, 'Search country or dialling code'),
+      text: 'united king',
+      slowly: true,
+    });
+    await tool('browser_wait_for', { time: 0.4 });
+    const filtered = await evaluate(`() => {
+      const shown = [...document.querySelectorAll('.picker__option')]
+        .filter(li => li.getBoundingClientRect().height > 0);
+      return { count: shown.length, first: shown[0] ? shown[0].textContent.trim() : '' };
+    }`);
+    check('typing in the picker narrows the list',
+      filtered.count === 1 && /United Kingdom/.test(filtered.first),
+      `${filtered.count} match: ${filtered.first}`);
+
+    snap = await tool('browser_snapshot', {});
+    await tool('browser_click', {
+      element: 'United Kingdom', target: refForText(snap, 'United Kingdom'),
+    });
+    await tool('browser_wait_for', { time: 0.4 });
+
+    const abroad = await evaluate(`() => ({
+      caption: document.querySelector('.picker__button').textContent.trim(),
+      value: document.getElementById('country_code').value,
+      hint: document.getElementById('phoneHint').textContent.trim(),
+      closed: document.querySelector('.picker__panel').hidden,
+    })`);
+    check('choosing a country updates the button and the hint',
+      abroad.caption === '+44' && abroad.value === 'GB'
+        && /United Kingdom/.test(abroad.hint) && /10 digits/.test(abroad.hint),
+      `${abroad.caption} / ${abroad.hint}`);
+    check('the list closes after choosing', abroad.closed === true, String(abroad.closed));
 
     const phoneState = () => evaluate(`() => ({
       typed: document.getElementById('phone').value,
@@ -192,20 +258,36 @@ async function main() {
     check('a 10-digit Indian number clears the warning',
       !full.invalid && full.error === '', full.error || 'clean');
 
-    const abroad = await evaluate(`() => {
-      const select = document.getElementById('country_code');
-      select.value = 'GB';
-      select.dispatchEvent(new Event('change', { bubbles: true }));
-      return {
-        hint: document.getElementById('phoneHint').textContent.trim(),
-        selected: select.options[select.selectedIndex].textContent.trim(),
-      };
-    }`);
-    check('choosing another country restates the expected length',
-      /United Kingdom/.test(abroad.hint) && /10 digits/.test(abroad.hint), abroad.hint);
-    await tool('browser_evaluate', {
-      function: "() => { const s = document.getElementById('country_code'); s.value = 'IN'; s.dispatchEvent(new Event('change', { bubbles: true })); }",
+    // Back to India through the same UI, not by poking the select.
+    snap = await tool('browser_snapshot', {});
+    await tool('browser_click', {
+      element: 'Country dialling code', target: refFor(snap, 'Country dialling code'),
     });
+    await tool('browser_wait_for', { time: 0.3 });
+    await tool('browser_type', {
+      element: 'Search country or dialling code',
+      target: refFor(await tool('browser_snapshot', {}), 'Search country or dialling code'),
+      text: 'india',
+      slowly: true,
+    });
+    await tool('browser_wait_for', { time: 0.4 });
+
+    // A prefix match has to beat a country that merely contains the word:
+    // "india" also matches British Indian Ocean Territory.
+    const ranked = await evaluate(`() => {
+      const shown = [...document.querySelectorAll('.picker__option')]
+        .filter(li => li.getBoundingClientRect().height > 0);
+      return { count: shown.length, first: shown[0] ? shown[0].textContent.trim() : '' };
+    }`);
+    check('a country whose name starts with the query is ranked first',
+      ranked.count > 1 && /\+91 India$/.test(ranked.first),
+      `${ranked.count} matches, first: ${ranked.first}`);
+
+    await tool('browser_press_key', { key: 'Enter' });
+    await tool('browser_wait_for', { time: 0.4 });
+    check('India can be picked again with the keyboard',
+      (await evaluate("() => document.getElementById('country_code').value")) === 'IN',
+      await evaluate("() => document.getElementById('country_code').value"));
 
     /* 3. fill it in; the verdict must come from the server */
     snap = await tool('browser_snapshot', {});

@@ -75,12 +75,14 @@ Create the first account through **/signup** (enabled by default; set
 `SIGNUP_ENABLED=false` to close registration afterwards).
 
 Registration takes a name, a work e-mail, a mobile number and a password. The
-mobile number is picked from a country list covering **236 dialling codes**
-(`policy/Countries.java`) and is validated server-side against that same table:
-the punctuation people actually type is stripped, a national trunk `0` is
-dropped, the digit count must match the country's numbering plan, and the result
-is stored in E.164 (`+919876543210`). `policy/PhoneNumbers.java` owns the rules,
-so the browser's picker and the server's verdict cannot drift apart.
+mobile number is picked from a searchable list of **236 dialling codes**
+(`policy/Countries.java`); the picker collapses to a short `+91` button so the
+number keeps almost all of the field. The same table drives
+`policy/PhoneNumbers.java`, which validates the number server-side: the
+punctuation people actually type is stripped, a national trunk `0` is dropped,
+the digit count must match the country's numbering plan, and the result is
+stored in E.164 (`+919876543210`). Because the picker and the validator read one
+table, they cannot drift apart.
 
 ## 4. Configuration
 

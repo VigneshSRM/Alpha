@@ -227,12 +227,251 @@
     };
   }
 
+
+  /* ------------------------------------------------------------------ */
+  /* Country picker                                                      */
+  /*                                                                     */
+  /* The <select> stays in the form — it is what posts and what works    */
+  /* without JavaScript — but a full-width native select eats half the   */
+  /* field. So it is swapped for a short "+91" button that opens a       */
+  /* searchable list. The select keeps the value.                        */
+  /* ------------------------------------------------------------------ */
+  function initCountryPicker(select) {
+    var host = select.closest("[data-picker]");
+    if (!host) return null;
+
+    var options = Array.prototype.map.call(select.options, function (option) {
+      var parts = option.textContent.trim().split(" ");
+      return {
+        iso: option.value,
+        dial: parts[0],
+        name: parts.slice(1).join(" "),
+        digits: option.getAttribute("data-digits") || ""
+      };
+    });
+
+    var button = document.createElement("button");
+    button.type = "button";
+    button.className = "picker__button";
+    button.setAttribute("role", "combobox");
+    button.setAttribute("aria-haspopup", "listbox");
+    button.setAttribute("aria-expanded", "false");
+    button.setAttribute("aria-controls", "countryList");
+    button.setAttribute("aria-label", "Country dialling code");
+
+    var caption = document.createElement("span");
+    button.appendChild(caption);
+    button.insertAdjacentHTML("beforeend",
+      '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor"'
+      + ' stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
+      + '<path d="m6 9 6 6 6-6"/></svg>');
+
+    var panel = document.createElement("div");
+    panel.className = "picker__panel";
+    panel.hidden = true;
+
+    var search = document.createElement("input");
+    search.type = "search";
+    search.className = "picker__search";
+    search.placeholder = "Search country or code";
+    search.setAttribute("aria-label", "Search country or dialling code");
+    search.autocomplete = "off";
+    search.spellcheck = false;
+
+    var list = document.createElement("ul");
+    list.className = "picker__list";
+    list.id = "countryList";
+    list.setAttribute("role", "listbox");
+    list.setAttribute("aria-label", "Countries");
+
+    var items = options.map(function (entry) {
+      var li = document.createElement("li");
+      li.className = "picker__option";
+      li.id = "country-" + entry.iso;
+      li.setAttribute("role", "option");
+      li.dataset.iso = entry.iso;
+      li.dataset.search = (entry.name + " " + entry.dial + " " + entry.iso).toLowerCase();
+      li.dataset.name = entry.name.toLowerCase();
+      var dial = document.createElement("span");
+      dial.className = "picker__dial";
+      dial.textContent = entry.dial;
+      var name = document.createElement("span");
+      name.textContent = entry.name;
+      li.appendChild(dial);
+      li.appendChild(document.createTextNode(" "));
+      li.appendChild(name);
+      return li;
+    });
+    items.forEach(function (li) { list.appendChild(li); });
+
+    var empty = document.createElement("p");
+    empty.className = "picker__empty";
+    empty.textContent = "No country matches that.";
+    empty.hidden = true;
+
+    panel.appendChild(search);
+    panel.appendChild(empty);
+    panel.appendChild(list);
+    host.appendChild(button);
+    host.appendChild(panel);
+    host.classList.add("is-enhanced");
+    // The button now carries the semantics; keep the select out of the tab order.
+    select.tabIndex = -1;
+    select.setAttribute("aria-hidden", "true");
+
+    var active = null;
+
+    function currentIndex() {
+      for (var i = 0; i < items.length; i++) {
+        if (items[i].dataset.iso === select.value) return i;
+      }
+      return 0;
+    }
+
+    function syncCaption() {
+      var option = select.options[select.selectedIndex];
+      caption.textContent = option ? option.textContent.trim().split(" ")[0] : "+";
+    }
+
+    function markActive(index, scroll) {
+      if (active && active.classList) active.classList.remove("is-active");
+      active = items[index] || null;
+      if (!active) {
+        button.removeAttribute("aria-activedescendant");
+        return;
+      }
+      active.classList.add("is-active");
+      button.setAttribute("aria-activedescendant", active.id);
+      if (scroll) active.scrollIntoView({ block: "nearest" });
+    }
+
+    function paintSelection() {
+      items.forEach(function (li) {
+        li.setAttribute("aria-selected", li.dataset.iso === select.value ? "true" : "false");
+      });
+    }
+
+    function open() {
+      if (!panel.hidden) return;
+      panel.hidden = false;
+      button.setAttribute("aria-expanded", "true");
+      search.value = "";
+      filter("");
+      var index = currentIndex();
+      markActive(index, true);
+      search.focus({ preventScroll: true });
+      if (active) active.scrollIntoView({ block: "nearest" });
+    }
+
+    function close(refocus) {
+      if (panel.hidden) return;
+      panel.hidden = true;
+      button.setAttribute("aria-expanded", "false");
+      button.removeAttribute("aria-activedescendant");
+      if (active) active.classList.remove("is-active");
+      active = null;
+      if (refocus) button.focus({ preventScroll: true });
+    }
+
+    function choose(iso) {
+      if (!iso) return;
+      select.value = iso;
+      syncCaption();
+      paintSelection();
+      select.dispatchEvent(new Event("change", { bubbles: true }));
+      close(true);
+    }
+
+    /* Ranking matters: "india" must put India above British Indian Ocean
+       Territory, so prefix matches are pulled to the top of the list. */
+    function filter(term) {
+      var needle = term.trim().toLowerCase();
+      var matched = [];
+      items.forEach(function (li) {
+        var name = li.dataset.name;
+        var hit = !needle || li.dataset.search.indexOf(needle) >= 0;
+        li.hidden = !hit;
+        if (!hit) return;
+        var rank = 2;
+        if (!needle) rank = 2;
+        else if (name.indexOf(needle) === 0) rank = 0;
+        else if (name.indexOf(needle) > 0) rank = 1;
+        matched.push({ li: li, rank: rank });
+      });
+      matched.sort(function (a, b) { return a.rank - b.rank; });
+      matched.forEach(function (entry) { list.appendChild(entry.li); });
+      empty.hidden = matched.length > 0;
+      markActive(matched.length ? items.indexOf(matched[0].li) : -1, false);
+    }
+
+    /* DOM order, so arrow keys follow what the user sees after a search. */
+    function visibleItems() {
+      return Array.prototype.filter.call(list.children, function (element) {
+        return element.classList.contains("picker__option") && !element.hidden;
+      });
+    }
+
+    function move(step) {
+      var shown = visibleItems();
+      if (!shown.length) return;
+      var at = shown.indexOf(active);
+      var next = at < 0 ? 0 : (at + step + shown.length) % shown.length;
+      markActive(items.indexOf(shown[next]), true);
+    }
+
+    button.addEventListener("click", function () {
+      if (panel.hidden) open();
+      else close(true);
+    });
+
+    button.addEventListener("keydown", function (event) {
+      if (event.key === "ArrowDown" || event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        if (panel.hidden) open();
+        else if (event.key === "Enter") choose(active && active.dataset.iso);
+        return;
+      }
+      if (event.key === "Escape") close(true);
+    });
+
+    search.addEventListener("input", function () { filter(search.value); });
+
+    search.addEventListener("keydown", function (event) {
+      if (event.key === "ArrowDown") { event.preventDefault(); move(1); }
+      else if (event.key === "ArrowUp") { event.preventDefault(); move(-1); }
+      else if (event.key === "Enter") { event.preventDefault(); choose(active && active.dataset.iso); }
+      else if (event.key === "Escape") { event.preventDefault(); close(true); }
+      else if (event.key === "Tab") close(false);
+    });
+
+    list.addEventListener("click", function (event) {
+      var li = event.target.closest(".picker__option");
+      if (li) choose(li.dataset.iso);
+    });
+
+    list.addEventListener("mousemove", function (event) {
+      var li = event.target.closest(".picker__option");
+      if (li && li !== active) markActive(items.indexOf(li), false);
+    });
+
+    document.addEventListener("click", function (event) {
+      if (!panel.hidden && !host.contains(event.target)) close(false);
+    });
+
+    syncCaption();
+    paintSelection();
+
+    return { open: open, sync: syncCaption };
+  }
+
   function initPhone() {
     var input = $("phone");
     var select = $("country_code");
     var hint = $("phoneHint");
     var form = $("authForm");
     if (!input || !select || !form) return;
+
+    initCountryPicker(select);
 
     function describe(silent) {
       var plan = digitsFor(select);

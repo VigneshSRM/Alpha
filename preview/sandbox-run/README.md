@@ -44,6 +44,11 @@ failed.
 | `03-signup.png` | the request-account form filled in by the smoke test — picker, hint and a valid number |
 | `03-signup-rejected.png` | the server said **422**: “Enter a 10-digit mobile number for India.” in the banner and under the field |
 | `04-account.png` | the corrected number was accepted (`200`, `+919876543210`) and the browser was redirected to the account page |
+| `05-mobile-too-short.png` | seven digits typed: the hint gives way to “Keep going — India numbers have 10 digits.” |
+| `06-phone-picker.png` | the dial-code button opened: all 236 countries, scrolled to the current one |
+| `07-phone-search.png` | typing “united king” narrows the list to `+44 United Kingdom` |
+| `08-phone-gb.png` | after choosing it: the button reads `+44` and the hint switches to “10 digits for United Kingdom” |
+| `09-phone-mobile.png` | 390×844 with the list open — it stays inside the viewport, no sideways scroll |
 
 ## Reproduce it
 
@@ -65,14 +70,20 @@ the country picker's contents, and the absence of stray banners. Last run:
 ```
 [PASS] country picker lists every country — 236 options
 [PASS] India is preselected with its dial code — IN +91 India
+[PASS] the closed picker shows only the dial code — +91
+[PASS] the picker leaves most of the field to the number — 57px of 402px
+[PASS] picker has an accessible name — Country dialling code
 [PASS] hint states the digits India uses — 10 digits for India
 [PASS] mobile field has a clean accessible name — Mobile number
+[PASS] the dial-code button opens the full country list — 236 options
+[PASS] opening the list puts the cursor in its search box — picker__search
+[PASS] typing in the picker narrows the list — 1 match: +44 United Kingdom
+[PASS] choosing a country updates the button and the hint — +44 / 10 digits for United Kingdom
+[PASS] a country whose name starts with the query is ranked first — 2 matches, first: +91 India
+[PASS] India can be picked again with the keyboard — IN
 [PASS] a too-short number is flagged while typing — Keep going — India numbers have 10 digits.
-[PASS] letters cannot be typed into the field — 987654321
-[PASS] a 10-digit Indian number clears the warning — clean
-[PASS] choosing another country restates the expected length — 10 digits for United Kingdom
 ...
-22 checks, 0 failures
+30 checks, 0 failures
 ```
 
 ## To run the actual application

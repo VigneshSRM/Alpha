@@ -79,14 +79,18 @@
                 <rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18.5h2"/>
               </svg>
             </span>
-            <select class="control__select" id="country_code" name="country_code"
-                    aria-label="Country dialling code">
-              <option th:each="c : ${countries}"
-                      th:value="${c.iso}"
-                      th:text="${c.dialCode} + ' ' + ${c.name}"
-                      th:attr="data-digits=${c.minDigits + '-' + c.maxDigits}"
-                      th:selected="${c.iso == form['country']}">+91 India</option>
-            </select>
+            <!-- The native select is the value the form posts; auth.js turns it
+                 into a dial-code button that opens a searchable list. -->
+            <div class="picker" data-picker>
+              <select class="control__select" id="country_code" name="country_code"
+                      aria-label="Country dialling code">
+                <option th:each="c : ${countries}"
+                        th:value="${c.iso}"
+                        th:text="${c.dialCode} + ' ' + ${c.name}"
+                        th:attr="data-digits=${c.minDigits + '-' + c.maxDigits}"
+                        th:selected="${c.iso == form['country']}">+91 India</option>
+              </select>
+            </div>
             <input class="control__input" id="phone" name="phone" type="tel" inputmode="tel"
                    autocomplete="tel-national" spellcheck="false" placeholder="98765 43210"
                    maxlength="20" required th:value="${form['phone']}"

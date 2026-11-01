@@ -416,12 +416,16 @@ ul { padding: 0; list-style: none; }
 .field.is-invalid .control { border-color: var(--danger-line); background: rgba(122, 26, 12, 0.24); }
 .field.is-valid .control { border-color: var(--success-line); }
 
-/* Dialling-code picker sits inside the same rounded box as the number. */
+/* Dialling-code picker: a short button showing only the code opens a
+   searchable list, so the number itself keeps almost all of the field. */
 .control--split { gap: 8px; }
 
-.control__select {
-  flex: 0 1 auto;
-  max-width: 52%;
+.picker { position: relative; flex: 0 0 auto; min-width: 0; }
+
+/* Fallback with JavaScript off: the plain select, kept narrow. */
+.picker > .control__select {
+  width: 7.4rem;
+  max-width: 45%;
   min-width: 0;
   appearance: none;
   -webkit-appearance: none;
@@ -440,8 +444,110 @@ ul { padding: 0; list-style: none; }
   text-overflow: ellipsis;
 }
 
-.control__select:focus { outline: none; }
-.control__select option { background: #150926; color: var(--text); }
+.picker > .control__select:focus { outline: none; }
+.picker > .control__select option { background: #150926; color: var(--text); }
+
+/* JavaScript on: the select steps aside, the button takes over. */
+.picker.is-enhanced > .control__select {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  clip-path: inset(50%);
+  overflow: hidden;
+}
+
+.picker__button {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  height: 100%;
+  padding: 12px 10px 12px 0;
+  border: 0;
+  border-right: 1px solid var(--line);
+  background: transparent;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 0.86rem;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.picker__button svg { color: rgba(230, 230, 250, 0.55); flex: none; }
+.picker__button:hover svg { color: rgba(230, 230, 250, 0.85); }
+
+.picker__button:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+.picker__panel {
+  position: absolute;
+  z-index: 40;
+  top: calc(100% + 10px);
+  left: -13px;
+  width: 19rem;
+  max-width: 78vw;
+  padding: 8px;
+  background: #170a29;
+  border: 1px solid rgba(230, 230, 250, 0.18);
+  border-radius: 14px;
+  box-shadow: 0 26px 60px rgba(6, 0, 18, 0.72);
+}
+
+.picker__panel[hidden] { display: none; }
+
+.picker__search {
+  width: 100%;
+  margin-bottom: 6px;
+  padding: 9px 11px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 0.85rem;
+}
+
+.picker__search:focus { outline: none; border-color: rgba(255, 215, 0, 0.6); }
+
+.picker__list {
+  max-height: 15.5rem;
+  overflow-y: auto;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  scrollbar-width: thin;
+}
+
+.picker__option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  color: var(--text);
+  cursor: pointer;
+}
+
+/* The class sets display:flex, which would otherwise beat the UA [hidden] rule. */
+.picker__option[hidden] { display: none; }
+
+.picker__option[aria-selected="true"] { background: rgba(255, 215, 0, 0.12); }
+.picker__option.is-active { background: rgba(230, 230, 250, 0.12); }
+.picker__option .picker__dial { color: rgba(230, 230, 250, 0.65); font-variant-numeric: tabular-nums; }
+
+.picker__empty {
+  padding: 10px;
+  font-size: 0.82rem;
+  color: rgba(230, 230, 250, 0.6);
+}
+
 .control--split .control__input { padding-left: 2px; }
 
 .control__icon {
