@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}Dashboard · {{ app_name }}{% endblock %}
+{% block body_class %}page page--app{% endblock %}
+
+{% block content %}
+<div class="scene" aria-hidden="true">
+  <img class="scene__photo" src="{{ url_for('static', filename='img/hero-bg.jpg', v=asset_v) }}" alt="">
+  <div class="scene__wash"></div>
+  <div class="scene__vignette"></div>
+</div>
+
+<header class="topbar">
+  <a class="topbar__brand" href="{{ url_for('auth.dashboard') }}">
+    <img src="{{ url_for('static', filename='img/alpha-logo-light.png', v=asset_v) }}"
+         alt="{{ app_name }} — {{ tagline }}" width="1997" height="787">
+  </a>
+  <div class="topbar__right">
+    <span class="topbar__user">
+      <span class="avatar" aria-hidden="true">{{ account.name[:1]|upper }}</span>
+      <span class="topbar__email">{{ account.email }}</span>
+    </span>
+    <form method="post" action="{{ url_for('auth.logout') }}" class="topbar__logout">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <button class="btn btn--ghost btn--sm" type="submit">Sign out</button>
+    </form>
+  </div>
+</header>
+
+<main class="dash">
+  <section class="dash__hero">
+    <p class="intro__eyebrow">Secure session</p>
+    <h1>Welcome back, {{ account.name }}</h1>
+    <p class="dash__lead">
+      You are signed in through <strong>{{ session_info.backend|capitalize }} Auth</strong>. This is the
+      protected area — extend it with your own modules.
+    </p>
+  </section>
+
+  <section class="panel">
+    <h2 class="panel__title">Account</h2>
+    <dl class="kv">
+      <div><dt>Name</dt><dd>{{ account.name }}</dd></div>
+      <div><dt>E-mail</dt><dd>{{ account.email }}</dd></div>
+      <div><dt>User ID</dt><dd class="mono">{{ account.id }}</dd></div>
+      {% if account.joined %}<div><dt>Member since</dt><dd>{{ account.joined }}</dd></div>{% endif %}
+    </dl>
+  </section>
+
+  <section class="panel">
+    <h2 class="panel__title">Session</h2>
+    <dl class="kv">
+      <div><dt>Provider</dt><dd>{{ session_info.backend|capitalize }} Auth</dd></div>
+      <div>
+        <dt>Token expires in</dt>
+        <dd><span id="sessionTimer" data-expires="{{ session_info.expires_at }}">—</span></dd>
+      </div>
+      <div>
+        <dt>Signed in</dt>
+        <dd><span data-unixtime="{{ session_info.logged_in_at }}">—</span></dd>
+      </div>
+    </dl>
+    <p class="panel__note">Access tokens refresh silently before they expire.</p>
+  </section>
+
+  <section class="panel">
+    <h2 class="panel__title">Active password policy</h2>
+    <ul class="policy-chips">
+      <li>{{ policy.minLength }}+ characters</li>
+      <li>{{ policy.minUppercase }} uppercase</li>
+      <li>{{ policy.minLowercase }} lowercase</li>
+      <li>{{ policy.minDigits }} numbers</li>
+      <li>{{ policy.minSpecial }} special characters</li>
+      <li>No common patterns</li>
+    </ul>
+    <p class="panel__note">
+      Enforced server-side by <code>app/password_policy.py</code> and by Supabase Auth.
+    </p>
+  </section>
+</main>
+
+<footer class="page-footer">
+  <span>© {{ year }} {{ app_name }}</span>
+  <span class="page-footer__sep" aria-hidden="true">•</span>
+  <span>Sessions by {{ provider_name }} Auth</span>
+</footer>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/dashboard.js', v=asset_v) }}" defer></script>
+{% endblock %}
