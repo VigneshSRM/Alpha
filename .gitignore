@@ -1,0 +1,14 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+
+# Local demo vault (never commit credentials/hashes)
+.data/
+
+# Tooling
+.pytest_cache/
+.ruff_cache/
+.DS_Store

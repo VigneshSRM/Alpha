@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#1a0b33">
+  <meta name="description" content="Alpha Group of India — The Way to Lead. Secure sign-in portal.">
+  <title>{% block title %}{{ app_name }} · Sign in{% endblock %}</title>
+  <link rel="icon" type="image/png" href="{{ url_for('static', filename='img/alpha-logo.png') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+  {% block head %}{% endblock %}
+</head>
+<body class="{% block body_class %}{% endblock %}"
+      data-policy='{{ policy|tojson }}'>
+  {% block content %}{% endblock %}
+  {% block scripts %}{% endblock %}
+</body>
+</html>

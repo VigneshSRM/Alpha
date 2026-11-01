@@ -1,0 +1,351 @@
+{% extends "base.html" %}
+{% block title %}Sign in · {{ app_name }}{% endblock %}
+{% block body_class %}page page--auth{% endblock %}
+
+{% block content %}
+<div class="backdrop" aria-hidden="true">
+  <span class="backdrop__orb backdrop__orb--gold"></span>
+  <span class="backdrop__orb backdrop__orb--ember"></span>
+  <span class="backdrop__grid"></span>
+</div>
+
+<main class="shell">
+  <section class="card" aria-labelledby="loginHeading">
+    {% include "partials/brand.html" %}
+
+    <div class="panel">
+      <header class="panel__head">
+        <img class="panel__logo" src="{{ url_for('static', filename='img/alpha-logo.png') }}"
+             alt="{{ app_name }}" width="1997" height="787">
+        <p class="eyebrow"><span class="eyebrow__line" aria-hidden="true"></span>Welcome back</p>
+        <h1 id="loginHeading">Sign in to your account</h1>
+        <p class="panel__sub">Enter your Alpha Group credentials to continue.</p>
+      </header>
+
+      {% if error %}
+      <div class="alert alert--error" role="alert" data-server-alert>
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="9"/><path d="M12 8v5"/><path d="M12 16.5v.01"/>
+        </svg>
+        <span>{{ error }}</span>
+      </div>
+      {% endif %}
+
+      {% if notice %}
+      <div class="alert alert--notice" role="status">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 7.5v.01"/>
+        </svg>
+        <span>{{ notice }}</span>
+      </div>
+      {% endif %}
+
+      <div class="alert alert--success" id="formSuccess" role="status" hidden>
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="9"/><path d="m8.5 12.5 2.5 2.5 4.5-5"/>
+        </svg>
+        <span id="formSuccessText">Signed in. Redirecting…</span>
+      </div>
+
+      <form class="form" id="loginForm" method="post" action="{{ url_for('auth.login') }}"
+            novalidate autocomplete="on" data-mode="login">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <input type="hidden" name="next" value="{{ next_url }}">
+
+        <div class="field" data-field="email">
+          <label class="field__label" for="email">E-mail address</label>
+          <div class="control">
+            <span class="control__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"
+                   stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="5" width="18" height="14" rx="3"/><path d="m4 7.5 8 5.5 8-5.5"/>
+              </svg>
+            </span>
+            <input class="control__input" id="email" name="email" type="email" inputmode="email"
+                   autocomplete="username" spellcheck="false" placeholder="name@alphagroup.in"
+                   value="{{ form.email or '' }}" maxlength="254" required
+                   aria-describedby="emailError">
+            <button class="control__action control__action--ghost" type="button"
+                    id="clearEmail" hidden aria-label="Clear e-mail field">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"
+                   stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+            </button>
+          </div>
+          <p class="field__error" id="emailError" role="alert"
+             data-error="{{ errors.get('email', '') }}">{{ errors.get('email', '') }}</p>
+        </div>
+
+        <div class="field" data-field="password">
+          <div class="field__top">
+            <label class="field__label" for="password">Password</label>
+            <div class="field__tools">
+              <button type="button" class="pill-btn" id="policyInfoBtn"
+                      aria-haspopup="dialog" aria-controls="policyModal">
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor"
+                     stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 7.8v.01"/>
+                </svg>
+                Password policy
+              </button>
+            </div>
+          </div>
+
+          <div class="control">
+            <span class="control__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"
+                   stroke-linecap="round" stroke-linejoin="round">
+                <rect x="4" y="10" width="16" height="10" rx="3"/><path d="M8 10V7.5a4 4 0 0 1 8 0V10"/>
+                <path d="M12 14v2.5"/>
+              </svg>
+            </span>
+            <input class="control__input control__input--password" id="password" name="password"
+                   type="password" autocomplete="current-password" placeholder="Enter your password"
+                   maxlength="128" required aria-describedby="passwordError capsLock passwordRules"
+                   enterkeyhint="go">
+            <button class="control__action" type="button" id="togglePassword"
+                    aria-label="Show password" aria-pressed="false" title="Show password">
+              <svg class="icon-eye" viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor"
+                   stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z"/>
+                <circle cx="12" cy="12" r="3.2"/>
+              </svg>
+              <svg class="icon-eye-off" viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor"
+                   stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" hidden>
+                <path d="M4 4l16 16"/>
+                <path d="M9.6 6.1A9.9 9.9 0 0 1 12 5.5c6 0 9.5 6.5 9.5 6.5a17 17 0 0 1-2.7 3.6"/>
+                <path d="M6.2 7.7A17 17 0 0 0 2.5 12S6 18.5 12 18.5a9.6 9.6 0 0 0 3.6-.7"/>
+                <path d="M10.1 10.3a2.7 2.7 0 0 0 3.7 3.8"/>
+              </svg>
+            </button>
+          </div>
+
+          <p class="hint hint--caps" id="capsLock" hidden>
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"
+                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M12 4 5 11h4v4h6v-4h4Z"/><path d="M8 20h8"/>
+            </svg>
+            Caps Lock is on
+          </p>
+
+          <div class="meter" id="strengthMeter" data-strength="weak" hidden>
+            <div class="meter__bars" aria-hidden="true">
+              <span></span><span></span><span></span><span></span>
+            </div>
+            <span class="meter__label" id="strengthLabel">Too short</span>
+          </div>
+
+          <ul class="rules" id="passwordRules" aria-label="Password requirements">
+            {% for rule in rules %}
+            <li class="rule" data-rule="{{ rule.key }}">
+              <span class="rule__mark" aria-hidden="true">
+                <svg class="rule__tick" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor"
+                     stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                <span class="rule__dot"></span>
+              </span>
+              <span class="rule__text">{{ rule.label }}<em>{{ rule.hint }}</em></span>
+            </li>
+            {% endfor %}
+          </ul>
+
+          <p class="field__error" id="passwordError" role="alert"
+             data-error="{{ errors.get('password', '') }}">{{ errors.get('password', '') }}</p>
+        </div>
+
+        <div class="form__row">
+          <label class="checkbox">
+            <input type="checkbox" id="remember" name="remember" value="1" {% if form.remember %}checked{% endif %}>
+            <span class="checkbox__box" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3.4"
+                   stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+            </span>
+            <span class="checkbox__label">Keep me signed in</span>
+          </label>
+
+          <button type="button" class="link-btn" id="forgotBtn">Forgot password?</button>
+        </div>
+
+        <button class="btn btn--primary" type="submit" id="submitBtn">
+          <span class="btn__label">Sign in</span>
+          <span class="btn__spinner" aria-hidden="true"></span>
+          <svg class="btn__arrow" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor"
+               stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M5 12h13"/><path d="m12.5 5.5 6.5 6.5-6.5 6.5"/>
+          </svg>
+        </button>
+
+        <p class="form__alt">
+          New to Alpha Group?
+          <a class="link" href="{{ url_for('auth.signup') }}">Create an account</a>
+        </p>
+      </form>
+
+      {% if demo_mode %}
+      <div class="demo-card">
+        <div class="demo-card__head">
+          <span class="demo-card__badge">Demo mode</span>
+          <span class="demo-card__text">Supabase keys are not configured yet.</span>
+        </div>
+        <dl class="demo-card__creds">
+          <div><dt>E-mail</dt><dd><code>{{ demo_email }}</code></dd></div>
+          <div><dt>Password</dt><dd><code>{{ demo_password }}</code></dd></div>
+        </dl>
+        <button type="button" class="btn btn--ghost btn--sm" id="fillDemo">Use demo credentials</button>
+      </div>
+      {% endif %}
+
+      <footer class="panel__footer">
+        <span>© {{ year }} {{ app_name }}</span>
+        <span class="panel__dot" aria-hidden="true">•</span>
+        <span>{{ tagline }}</span>
+      </footer>
+    </div>
+  </section>
+</main>
+
+{# ------------------------------------------------------------------ #}
+{# Password policy dialog                                             #}
+{# ------------------------------------------------------------------ #}
+<div class="modal" id="policyModal" role="dialog" aria-modal="true" aria-labelledby="policyTitle" hidden>
+  <div class="modal__scrim" data-close-policy></div>
+  <div class="modal__card" role="document">
+    <header class="modal__head">
+      <div>
+        <p class="eyebrow"><span class="eyebrow__line" aria-hidden="true"></span>Account security</p>
+        <h2 id="policyTitle">Password policy</h2>
+      </div>
+      <button class="icon-btn" type="button" data-close-policy aria-label="Close password policy">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </header>
+
+    <p class="modal__lead">
+      Alpha Group passwords must be <strong>at least {{ policy.minLength }} characters</strong> and combine
+      upper case, lower case, numbers and symbols. Every rule below is enforced on the server as well as in
+      your browser.
+    </p>
+
+    <div class="policy-grid">
+      <div class="policy-item">
+        <span class="policy-item__value">{{ policy.minLength }}</span>
+        <span class="policy-item__label">Minimum characters</span>
+      </div>
+      <div class="policy-item">
+        <span class="policy-item__value">{{ policy.minUppercase }}</span>
+        <span class="policy-item__label">Uppercase letter (A–Z)</span>
+      </div>
+      <div class="policy-item">
+        <span class="policy-item__value">{{ policy.minLowercase }}</span>
+        <span class="policy-item__label">Lowercase letter (a–z)</span>
+      </div>
+      <div class="policy-item">
+        <span class="policy-item__value">{{ policy.minDigits }}</span>
+        <span class="policy-item__label">Numbers (0–9)</span>
+      </div>
+      <div class="policy-item">
+        <span class="policy-item__value">{{ policy.minSpecial }}</span>
+        <span class="policy-item__label">Special characters</span>
+      </div>
+      <div class="policy-item">
+        <span class="policy-item__value">{{ policy.maxLength }}</span>
+        <span class="policy-item__label">Maximum characters</span>
+      </div>
+    </div>
+
+    <div class="policy-columns">
+      <div>
+        <h3 class="policy-h3 policy-h3--good">Allowed</h3>
+        <ul class="policy-list policy-list--good">
+          <li>Symbols such as <code>! @ # $ % ^ &amp; * ( ) _ + - ?</code></li>
+          <li>Passphrases, e.g. <code>Wolf&nbsp;Runs@Dawn27!</code></li>
+          <li>Password-manager generated strings</li>
+        </ul>
+      </div>
+      <div>
+        <h3 class="policy-h3 policy-h3--bad">Rejected</h3>
+        <ul class="policy-list policy-list--bad">
+          <li>Common words such as <code>password</code>, <code>welcome</code>, <code>admin</code></li>
+          <li>Sequences such as <code>abcd</code> or <code>1234</code>, and <code>aaa</code> repeats</li>
+          <li>Your own name, e-mail or company name</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="modal__actions">
+      <button type="button" class="btn btn--ghost btn--sm" data-suggest-password>
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M12 3v3M12 18v3M4.2 7.5l2.6 1.5M17.2 15l2.6 1.5M4.2 16.5l2.6-1.5M17.2 9l2.6-1.5"/>
+          <circle cx="12" cy="12" r="3.4"/>
+        </svg>
+        Suggest a strong password
+      </button>
+      <button type="button" class="btn btn--primary btn--sm" data-close-policy>Got it</button>
+    </div>
+
+    <p class="modal__foot">
+      Never share your password. Alpha Group will never ask for it by e-mail or phone.
+    </p>
+  </div>
+</div>
+
+{# ------------------------------------------------------------------ #}
+{# Forgot-password dialog                                             #}
+{# ------------------------------------------------------------------ #}
+<div class="modal" id="forgotModal" role="dialog" aria-modal="true" aria-labelledby="forgotTitle" hidden
+     data-reset-endpoint="{{ url_for('auth.forgot_password') }}"
+     data-reset-enabled="{{ 'true' if supports_reset else 'false' }}">
+  <div class="modal__scrim" data-close-forgot></div>
+  <div class="modal__card modal__card--slim" role="document">
+    <header class="modal__head">
+      <div>
+        <p class="eyebrow"><span class="eyebrow__line" aria-hidden="true"></span>Account recovery</p>
+        <h2 id="forgotTitle">Reset your password</h2>
+      </div>
+      <button class="icon-btn" type="button" data-close-forgot aria-label="Close reset password dialog">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </header>
+
+    <p class="modal__lead">
+      Enter the e-mail address on your account. If it is registered we will send a secure reset link that
+      expires in 60 minutes.
+    </p>
+
+    <form class="form" id="forgotForm" method="post" action="{{ url_for('auth.forgot_password') }}" novalidate>
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <div class="field" data-field="forgotEmail">
+        <label class="field__label" for="forgotEmail">E-mail address</label>
+        <div class="control">
+          <span class="control__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"
+                 stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="5" width="18" height="14" rx="3"/><path d="m4 7.5 8 5.5 8-5.5"/>
+            </svg>
+          </span>
+          <input class="control__input" id="forgotEmail" name="email" type="email" inputmode="email"
+                 autocomplete="email" placeholder="name@alphagroup.in" required>
+        </div>
+        <p class="field__error" id="forgotEmailError" role="alert"></p>
+      </div>
+
+      <p class="alert alert--notice" id="forgotStatus" role="status" hidden></p>
+
+      <button class="btn btn--primary" type="submit" id="forgotSubmit">
+        <span class="btn__label">Send reset link</span>
+        <span class="btn__spinner" aria-hidden="true"></span>
+      </button>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+
+<script src="{{ url_for('static', filename='js/password-policy.js') }}" defer></script>
+<script src="{{ url_for('static', filename='js/auth.js') }}" defer></script>
+{% endblock %}

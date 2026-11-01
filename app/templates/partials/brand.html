@@ -1,0 +1,42 @@
+{# Left-hand brand panel shared by the login and signup screens #}
+<aside class="brand" aria-label="{{ app_name }}">
+  <div class="brand__aurora" aria-hidden="true"></div>
+  <div class="brand__inner">
+    <div class="brand__logo-wrap">
+      <img class="brand__logo" src="{{ url_for('static', filename='img/alpha-logo.png') }}"
+           alt="{{ app_name }} — The Way to Lead" width="1997" height="787" decoding="async">
+    </div>
+    <p class="brand__tagline">The Way to Lead</p>
+
+    <ul class="brand__points">
+      <li>
+        <span class="brand__tick" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4"
+               stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+        </span>
+        <span>Single secure gateway for every Alpha Group venture</span>
+      </li>
+      <li>
+        <span class="brand__tick" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4"
+               stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+        </span>
+        <span>12-character minimum passwords with complexity checks</span>
+      </li>
+      <li>
+        <span class="brand__tick" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4"
+               stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+        </span>
+        <span>Sessions served by {{ 'Supabase Auth' if backend_name == 'supabase' else 'the local demo vault' }}</span>
+      </li>
+    </ul>
+
+    <div class="brand__footer">
+      <span class="dot-live" aria-hidden="true"></span>
+      <span>Protected portal</span>
+      <span class="brand__sep" aria-hidden="true">•</span>
+      <span>{{ backend_name|capitalize }} auth</span>
+    </div>
+  </div>
+</aside>
