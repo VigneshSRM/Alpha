@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<!--
+  Shared pieces of the portal shell. The markup is identical to the Jinja
+  templates in app/templates/ so app.css and auth.js apply without changes.
+-->
+
+<head th:fragment="head(title)">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#150926">
+  <meta name="description" content="Alpha Group of India — secure client portal.">
+  <meta name="robots" content="noindex, nofollow">
+  <title th:text="${title}">Alpha Group of India · Sign in</title>
+  <link rel="icon" type="image/png" th:href="@{/img/alpha-logo-light.png(v=${assetV})}">
+  <link rel="preload" as="image" th:href="@{/img/hero-bg.jpg(v=${assetV})}" fetchpriority="high">
+  <link rel="stylesheet" th:href="@{/css/app.css(v=${assetV})}">
+</head>
+
+<body>
+
+<!-- Full-bleed scene: the photograph IS the page background. -->
+<div th:fragment="scene" class="scene" aria-hidden="true">
+  <img class="scene__photo" th:src="@{/img/hero-bg.jpg(v=${assetV})}" alt="" fetchpriority="high">
+  <div class="scene__wash"></div>
+  <div class="scene__vignette"></div>
+</div>
+
+<footer th:fragment="footer" class="page-footer">
+  <span th:text="'© ' + ${year} + ' ' + ${appName}">© 2026 Alpha Group of India</span>
+  <span class="page-footer__sep" aria-hidden="true">•</span>
+  <span th:text="'Sessions by ' + ${providerName} + ' Auth'">Sessions by Supabase Auth</span>
+</footer>
+
+<!-- Hover / tap the "!" to read the policy; the ticks update live. -->
+<div th:fragment="policyPopover(suggest)" class="policy-pop" id="policyPopover" role="dialog"
+     aria-label="Password requirements" hidden>
+  <p class="policy-pop__title" id="policyPopTitle">Password requirements</p>
+  <ul class="checklist" aria-describedby="policyPopTitle">
+    <li class="checklist__item" th:each="rule : ${rules}" th:attr="data-rule=${rule.key}">
+      <span class="checklist__mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor"
+             stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20 6 9 17l-5-5"/>
+        </svg>
+      </span>
+      <span class="checklist__text" th:inline="text">[[${rule.label}]]<em>[[${rule.hint}]]</em></span>
+    </li>
+  </ul>
+  <p class="policy-pop__foot" id="policyPopMessage">
+    Enforced by the authentication server. The tick turns green when your password passes.
+  </p>
+  <div class="policy-pop__actions" th:if="${suggest}">
+    <button type="button" class="btn btn--ghost btn--sm" data-suggest-password>
+      Suggest a strong password
+    </button>
+  </div>
+</div>
+
+<!-- The small circular "!" that turns into a green tick. -->
+<span th:fragment="hintIcon" class="hint-icon-wrap">
+  <button type="button" class="hint-icon" id="policyInfoBtn" data-state="empty"
+          aria-expanded="false" aria-controls="policyPopover"
+          aria-label="Password requirements — hover or tap for details">
+    <span class="hint-icon__bang" aria-hidden="true">!</span>
+    <svg class="hint-icon__tick" viewBox="0 0 24 24" width="12" height="12" fill="none"
+         stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"
+         aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+  </button>
+  <span class="sr-only" id="passwordState" role="status" aria-live="polite"></span>
+</span>
+
+<span th:fragment="eyeIcons" aria-hidden="true">
+  <svg class="icon-eye" viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor"
+       stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z"/>
+    <circle cx="12" cy="12" r="3.2"/>
+  </svg>
+  <svg class="icon-eye-off" viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor"
+       stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <path d="M4 4l16 16"/>
+    <path d="M9.6 6.1A9.9 9.9 0 0 1 12 5.5c6 0 9.5 6.5 9.5 6.5a17 17 0 0 1-2.7 3.6"/>
+    <path d="M6.2 7.7A17 17 0 0 0 2.5 12S6 18.5 12 18.5a9.6 9.6 0 0 0 3.6-.7"/>
+    <path d="M10.1 10.3a2.7 2.7 0 0 0 3.7 3.8"/>
+  </svg>
+</span>
+
+</body>
+</html>

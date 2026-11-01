@@ -265,3 +265,30 @@ python -m unittest discover -s tests -v
 | Sign-up succeeds but no session | *Confirm email* is enabled — confirm the link, then sign in. |
 | Login works locally but not behind a proxy | Set `SESSION_COOKIE_SECURE=1` and `SUPABASE_RESET_REDIRECT_URL` to the public URL. |
 | Logo looks washed out | Regenerate with `python scripts/make_logo_light.py` after replacing `alpha-logo.png`. |
+
+---
+
+## 10. Java 17 + Spring Boot port
+
+The same portal is also implemented in **Java 17 / Spring Boot 3.5** under
+[`spring-boot/`](spring-boot/README.md). Both stacks are kept in the repository and share
+**one** set of assets (`app/static`), so the "!" indicator, the eye toggle and the
+brand styling behave identically in either one.
+
+| | Flask (`app/`) | Spring Boot (`spring-boot/`) |
+| --- | --- | --- |
+| Templates | Jinja2 | Thymeleaf (same markup, same class names) |
+| Policy | `app/password_policy.py` | `policy/PasswordPolicy.java` (same rules, same messages) |
+| Live check | `POST /api/password-check` | identical endpoint and JSON |
+| CSRF | Flask token | Spring Security, renamed to `csrf_token` / `X-CSRF-Token` |
+| Identity | `supabase-py` | GoTrue REST via `RestClient` (no unofficial SDK) |
+| Assets | `app/static` | copied into the jar at build time |
+
+```bash
+cd spring-boot
+mvn test                 # policy, web, throttle, redirect suites
+mvn spring-boot:run -Dspring-boot.run.profiles=dev
+```
+
+Both stacks read the same `SUPABASE_URL` / `SUPABASE_ANON_KEY`. See
+[`spring-boot/README.md`](spring-boot/README.md) for the full run and security notes.
