@@ -1,8 +1,0 @@
-# Core web framework
-Flask>=3.0,<4.0
-# Supabase Python SDK (Auth / GoTrue client)
-supabase>=2.7,<3.0
-# Local .env loading
-python-dotenv>=1.0,<2.0
-# Production WSGI server
-gunicorn>=22.0,<24.0

@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments :: head('Sign in · ' + ${appName})}"></head>
+
+<body class="page page--auth" th:attr="data-policy=${policyJson}">
+
+<th:block th:replace="~{fragments :: scene}"></th:block>
+
+<main class="stage">
+  <div class="stage__col">
+    <section class="access" aria-labelledby="loginHeading">
+      <a class="access__brand" th:href="@{/login}" th:attr="aria-label=${appName}">
+        <img th:src="@{/img/alpha-logo-light.png(v=${assetV})}" th:alt="${appName}"
+             width="1200" height="472">
+      </a>
+
+      <h1 id="loginHeading">Welcome back</h1>
+      <p class="access__sub">Sign in with your Alpha Group credentials.</p>
+
+      <div class="flash flash--error" role="alert" data-flash th:hidden="${error == null}">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="9"/><path d="M12 8v5"/><path d="M12 16.5v.01"/>
+        </svg>
+        <span class="flash__body">
+          <span data-flash-text th:text="${error}"></span>
+          <a class="flash__link" data-flash-link href="/login" hidden>Sign in</a>
+        </span>
+      </div>
+
+      <div class="flash flash--notice" role="status"
+           th:if="${notice != null and !notice.isEmpty()}">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 7.8v.01"/>
+        </svg>
+        <span th:text="${notice}"></span>
+      </div>
+
+      <div class="flash flash--success" role="status" data-success hidden>
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="9"/><path d="m8.5 12.5 2.5 2.5 4.5-5"/>
+        </svg>
+        <span data-success-text>Signed in. Taking you to your dashboard…</span>
+      </div>
+
+      <form class="form" id="authForm" method="post" action="/login"
+            novalidate autocomplete="on" data-mode="login"
+            data-check-endpoint="/api/password-check">
+        <input type="hidden" name="csrf_token" th:value="${_csrf.token}">
+        <p class="form__req-note">Fields marked <span class="field__req" aria-hidden="true">*</span> are required.</p>
+        <input type="hidden" name="next" th:value="${nextUrl}">
+
+        <div class="field" data-field="email">
+          <label class="field__label" for="email">E-mail address<span class="field__req" aria-hidden="true">*</span></label>
+          <div class="control">
+            <span class="control__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"
+                   stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="5" width="18" height="14" rx="3"/><path d="m4 7.5 8 5.5 8-5.5"/>
+              </svg>
+            </span>
+            <input class="control__input" id="email" name="email" type="email" inputmode="email"
+                   autocomplete="username" spellcheck="false" placeholder="name@alphagroup.in"
+                   th:value="${form['email']}" maxlength="254" required aria-describedby="emailError" aria-required="true">
+            <button class="control__action control__action--ghost" type="button" id="clearEmail"
+                    hidden aria-label="Clear e-mail field" tabindex="-1">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"
+                   stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+            </button>
+          </div>
+          <p class="field__error" id="emailError" role="alert" th:text="${errors['email']}"></p>
+        </div>
+
+        <div class="field" data-field="password">
+          <div class="field__top">
+            <label class="field__label" for="password">Password<span class="field__req" aria-hidden="true">*</span></label>
+            <th:block th:replace="~{fragments :: hintIcon}"></th:block>
+          </div>
+
+          <div class="control">
+            <span class="control__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"
+                   stroke-linecap="round" stroke-linejoin="round">
+                <rect x="4" y="10" width="16" height="10" rx="3"/><path d="M8 10V7.5a4 4 0 0 1 8 0V10"/>
+                <path d="M12 14v2.5"/>
+              </svg>
+            </span>
+            <input class="control__input control__input--password" id="password" name="password"
+                   type="password" autocomplete="current-password" placeholder="Your password"
+                   maxlength="128" required aria-describedby="passwordError capsLock" enterkeyhint="go" aria-required="true">
+            <button class="control__action" type="button" id="togglePassword"
+                    aria-label="Show password" aria-pressed="false" title="Show password">
+              <th:block th:replace="~{fragments :: eyeIcons}"></th:block>
+            </button>
+          </div>
+
+          <p class="hint hint--caps" id="capsLock" hidden>
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"
+                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M12 4 5 11h4v4h6v-4h4Z"/><path d="M8 20h8"/>
+            </svg>
+            Caps Lock is on
+          </p>
+          <p class="field__error" id="passwordError" role="alert" th:text="${errors['password']}"></p>
+
+          <th:block th:replace="~{fragments :: policyPopover(suggest=false)}"></th:block>
+        </div>
+
+        <div class="form__row">
+          <label class="checkbox">
+            <input type="checkbox" id="remember" name="remember" value="1"
+                   th:checked="${form['remember']}">
+            <span class="checkbox__box" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3.4"
+                   stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+            </span>
+            <span class="checkbox__label">Keep me signed in</span>
+          </label>
+
+          <button type="button" class="link-btn" id="forgotBtn">Forgot password?</button>
+        </div>
+
+        <button class="btn btn--primary" type="submit" id="submitBtn">
+          <span class="btn__label">Sign in</span>
+          <span class="btn__spinner" aria-hidden="true"></span>
+          <svg class="btn__arrow" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor"
+               stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M5 12h13"/><path d="m12.5 5.5 6.5 6.5-6.5 6.5"/>
+          </svg>
+        </button>
+
+        <p class="form__alt" th:if="${supportsSignup}">
+          New to Alpha Group? <a class="link" th:href="@{/signup}">Request an account</a>
+        </p>
+      </form>
+    </section>
+  </div>
+</main>
+
+<th:block th:replace="~{fragments :: footer}"></th:block>
+
+<!-- Forgot password -->
+<div class="modal" id="forgotModal" role="dialog" aria-modal="true" aria-labelledby="forgotTitle" hidden
+     data-reset-endpoint="/forgot-password">
+  <div class="modal__scrim" data-close-forgot></div>
+  <div class="modal__card modal__card--slim" role="document">
+    <header class="modal__head">
+      <div>
+        <h2 id="forgotTitle">Reset your password</h2>
+      </div>
+      <button class="icon-btn" type="button" data-close-forgot aria-label="Close reset password dialog">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </header>
+
+    <p class="modal__lead">
+      Enter the e-mail address on your account. If it is registered, we will send a secure reset link
+      that expires in 60 minutes.
+    </p>
+
+    <form class="form" id="forgotForm" method="post" action="/forgot-password" novalidate>
+      <input type="hidden" name="csrf_token" th:value="${_csrf.token}">
+      <div class="field" data-field="forgotEmail">
+        <label class="field__label" for="forgotEmail">E-mail address<span class="field__req" aria-hidden="true">*</span></label>
+        <div class="control">
+          <span class="control__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"
+                 stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="5" width="18" height="14" rx="3"/><path d="m4 7.5 8 5.5 8-5.5"/>
+            </svg>
+          </span>
+          <input class="control__input" id="forgotEmail" name="email" type="email" inputmode="email"
+                 autocomplete="email" placeholder="name@alphagroup.in" required aria-required="true">
+        </div>
+        <p class="field__error" id="forgotEmailError" role="alert"></p>
+      </div>
+
+      <p class="flash flash--notice" id="forgotStatus" role="status" hidden></p>
+
+      <button class="btn btn--primary" type="submit" id="forgotSubmit">
+        <span class="btn__label">Send reset link</span>
+        <span class="btn__spinner" aria-hidden="true"></span>
+      </button>
+    </form>
+  </div>
+</div>
+
+<script th:src="@{/js/auth.js(v=${assetV})}" defer></script>
+</body>
+</html>

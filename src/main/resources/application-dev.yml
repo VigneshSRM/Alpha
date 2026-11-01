@@ -1,0 +1,12 @@
+# mvn spring-boot:run -Dspring-boot.run.profiles=dev
+spring:
+  thymeleaf:
+    cache: false
+
+alpha:
+  # Reset links are written to the log instead of being e-mailed.
+  log-reset-links: true
+
+logging:
+  level:
+    in.alphagroup.portal: DEBUG

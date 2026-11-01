@@ -1,0 +1,88 @@
+# How the portal is put together. Nothing here is a credential and nothing here
+# is read from the environment: the database URL, its username and password, the
+# remember-me key and the API settings all come from config/hibernate.properties
+# (see config/hibernate.properties.example). To point the app somewhere else,
+# edit that file — no exports, no -D flags, no environment store.
+server:
+  port: 8080
+  forward-headers-strategy: framework
+  servlet:
+    session:
+      timeout: 30m
+      cookie:
+        http-only: true
+        same-site: lax
+        secure: false          # config/hibernate.properties turns this on behind HTTPS
+  error:
+    whitelabel:
+      enabled: false
+
+spring:
+  application:
+    name: Alpha Group Portal
+
+  datasource:
+    driver-class-name: org.mariadb.jdbc.Driver
+    hikari:
+      connection-timeout: 5000
+
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: none          # Flyway owns the schema
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+
+  session:
+    jdbc:
+      initialize-schema: never   # tables come from Flyway (V2)
+      table-name: SPRING_SESSION
+    timeout: 30m
+
+  thymeleaf:
+    cache: false
+
+  web:
+    resources:
+      cache:
+        cachecontrol:
+          no-cache: true
+
+alpha:
+  app-name: Alpha Group of India
+  provider-name: Spring Security
+  support-email: help@alphagroup.in
+
+  security:
+    # Every one of these can be overridden in config/hibernate.properties.
+    remember-me-key: change-me-in-production-please-use-64-random-chars
+    remember-me-days: 14
+    login-max-attempts: 5
+    login-window-seconds: 900
+    bcrypt-strength: 12
+    reset-token-minutes: 60
+
+  signup:
+    enabled: true
+
+logging:
+  level:
+    in.alphagroup.portal: INFO
+
+---
+# The credentials file, read from the working directory. Skipped under the test
+# profile, which brings its own in-memory H2 and must never touch MariaDB.
+# "optional:" keeps a fresh clone working before the file has been copied.
+spring:
+  config:
+    activate:
+      on-profile: "!test"
+    import:
+      - optional:file:./config/hibernate.properties

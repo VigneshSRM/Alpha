@@ -1,14 +1,18 @@
-# Python
-__pycache__/
-*.py[cod]
-.venv/
-venv/
+# Build output
+target/
+!.mvn/wrapper/maven-wrapper.jar
+
+# IDE
+.idea/
+*.iml
+.vscode/
+*.log
+
+# Secrets — never commit real database credentials.
+# The portal reads config/hibernate.properties; the example is committed.
+config/hibernate.properties
 .env
+.env.local
 
-# Local demo vault (never commit credentials/hashes)
-.data/
-
-# Tooling
-.pytest_cache/
-.ruff_cache/
-.DS_Store
+# Playwright MCP writes accessibility snapshots here on every run
+.playwright-mcp/
