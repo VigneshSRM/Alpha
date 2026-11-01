@@ -190,10 +190,12 @@ ul { padding: 0; list-style: none; }
   position: relative;
   z-index: 2;
   display: grid;
-  grid-template-columns: minmax(0, 452px) minmax(0, 1fr);
+  /* Equal halves: the sign-in panel sits centred in the left one, the wolf
+     photograph keeps the right one to itself. */
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   align-items: center;
   align-content: center;
-  justify-items: start;
+  justify-items: center;
   column-gap: clamp(24px, 6vw, 120px);
   padding: clamp(18px, 2.4vw, 34px) clamp(20px, 5vw, 72px) clamp(20px, 3vw, 40px);
 }
@@ -208,8 +210,10 @@ ul { padding: 0; list-style: none; }
   align-content: center;
 }
 
-/* No masthead on the auth pages any more — the logo lives inside the panel. */
-.page--auth .stage { padding-top: clamp(24px, 5vh, 56px); }
+/* No masthead on the auth pages any more — the logo lives inside the panel.
+   The extra breathing room is applied to both edges so the centred panel
+   does not sit low. */
+.page--auth .stage { padding-block: clamp(24px, 4vh, 48px); }
 
 /* --------------------------------------------------------------------------
    Small shared pieces
