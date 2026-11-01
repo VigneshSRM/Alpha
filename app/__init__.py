@@ -8,7 +8,7 @@ from typing import Any
 
 import hmac
 
-from flask import Flask, jsonify, render_template, request, session
+from flask import Flask, jsonify, render_template, request, session, url_for
 
 from .backends import build_backend
 from .config import BASE_DIR, get_config
@@ -28,6 +28,7 @@ def create_app(config_object: Any | None = None) -> Flask:
     )
 
     app.extensions["auth_backend"] = build_backend(app.config)
+    app.extensions["asset_version"] = _asset_version(app)
 
     from .routes import bp as auth_bp
 
@@ -87,6 +88,7 @@ def create_app(config_object: Any | None = None) -> Flask:
             "form": {},
             "next_url": "/dashboard",
             "page_mode": "",
+            "asset_v": app.extensions["asset_version"],
             "supports_signup": app.extensions["auth_backend"].supports_signup,
             "supports_reset": app.extensions["auth_backend"].supports_password_reset,
             "provider_name": "Supabase",
@@ -145,6 +147,19 @@ def create_app(config_object: Any | None = None) -> Flask:
         BASE_DIR,
     )
     return app
+
+
+def _asset_version(app: Flask) -> str:
+    """Fingerprint of the static assets, used to bust browser caches.
+
+    Every ``?v=...`` query string changes when any static file changes, so a
+    redesign can never be masked by a stale CSS/JS copy in the browser.
+    """
+    latest = 0.0
+    for path in (BASE_DIR / "app" / "static").rglob("*"):
+        if path.is_file():
+            latest = max(latest, path.stat().st_mtime)
+    return str(int(latest))
 
 
 def _wants_json() -> bool:

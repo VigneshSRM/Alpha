@@ -4,14 +4,14 @@
 
 {% block content %}
 <div class="scene" aria-hidden="true">
-  <img class="scene__photo" src="{{ url_for('static', filename='img/hero-bg.jpg') }}" alt="">
+  <img class="scene__photo" src="{{ url_for('static', filename='img/hero-bg.jpg', v=asset_v) }}" alt="">
   <div class="scene__wash"></div>
   <div class="scene__vignette"></div>
 </div>
 
 <header class="masthead">
   <a class="masthead__brand" href="{{ url_for('auth.login') }}">
-    <img src="{{ url_for('static', filename='img/alpha-logo-light.png') }}"
+    <img src="{{ url_for('static', filename='img/alpha-logo-light.png', v=asset_v) }}"
          alt="{{ app_name }} — {{ tagline }}" width="1997" height="787">
   </a>
 </header>

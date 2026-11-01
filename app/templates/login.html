@@ -5,14 +5,14 @@
 {% block content %}
 {# Full-bleed scene: the photograph IS the page background. #}
 <div class="scene" aria-hidden="true">
-  <img class="scene__photo" src="{{ url_for('static', filename='img/hero-bg.jpg') }}" alt="" fetchpriority="high">
+  <img class="scene__photo" src="{{ url_for('static', filename='img/hero-bg.jpg', v=asset_v) }}" alt="" fetchpriority="high">
   <div class="scene__wash"></div>
   <div class="scene__vignette"></div>
 </div>
 
 <header class="masthead">
   <a class="masthead__brand" href="{{ url_for('auth.login') }}">
-    <img src="{{ url_for('static', filename='img/alpha-logo-light.png') }}"
+    <img src="{{ url_for('static', filename='img/alpha-logo-light.png', v=asset_v) }}"
          alt="{{ app_name }} — {{ tagline }}" width="1997" height="787">
   </a>
   <p class="masthead__meta">
@@ -341,6 +341,6 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="{{ url_for('static', filename='js/password-generator.js') }}" defer></script>
-<script src="{{ url_for('static', filename='js/auth.js') }}" defer></script>
+<script src="{{ url_for('static', filename='js/password-generator.js', v=asset_v) }}" defer></script>
+<script src="{{ url_for('static', filename='js/auth.js', v=asset_v) }}" defer></script>
 {% endblock %}
