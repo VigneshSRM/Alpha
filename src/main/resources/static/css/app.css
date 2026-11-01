@@ -1295,6 +1295,215 @@ code {
 .form__req-note .field__req { margin: 0 2px; }
 
 /* --------------------------------------------------------------------------
+   The workspace — onboarding, the module picker, the dashboard — is the
+   brand's own dark, not a photograph.
+   -------------------------------------------------------------------------- */
+.page--onboarding,
+.page--modules,
+.page--app {
+  background:
+    radial-gradient(1100px 560px at 50% -12%, rgba(255, 69, 0, 0.12), transparent 68%),
+    radial-gradient(900px 520px at 88% 108%, rgba(255, 215, 0, 0.07), transparent 70%),
+    var(--plum-deep);
+}
+
+/* --------------------------------------------------------------------------
+   Module picker — the cards burst out of the middle of the page
+   -------------------------------------------------------------------------- */
+.mods {
+  width: min(1180px, 100%);
+  margin: 0 auto;
+  padding: clamp(22px, 4vh, 48px) clamp(18px, 5vw, 64px) 18px;
+}
+
+.mods__brand { display: inline-block; width: min(180px, 46%); }
+.mods__brand img { width: 100%; height: auto; }
+
+.mods__head { margin: 22px 0 26px; }
+
+.mods__step {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+
+.mods__head h1 {
+  margin: 6px 0 8px;
+  font-size: clamp(1.5rem, 1.1rem + 1.4vw, 2rem);
+  line-height: 1.15;
+  color: #fff;
+}
+
+.mods__sub { max-width: 60ch; font-size: 0.9rem; color: var(--text-muted); }
+
+.mods__form { display: grid; gap: 18px; }
+
+.module-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.module {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  height: 100%;
+  padding: 16px 15px;
+  border: 1.5px solid rgba(230, 230, 250, 0.14);
+  border-radius: var(--radius);
+  background: rgba(21, 9, 38, 0.78);
+  cursor: pointer;
+  transition: border-color 0.18s var(--ease), background 0.18s var(--ease),
+    transform 0.18s var(--ease);
+}
+
+.module:hover { border-color: rgba(255, 215, 0, 0.45); }
+
+.module:has(input:checked) {
+  border-color: rgba(255, 215, 0, 0.8);
+  background: rgba(255, 215, 0, 0.08);
+}
+
+.module:has(input:focus-visible) {
+  outline: 2px solid var(--gold);
+  outline-offset: 3px;
+}
+
+/* The checkbox drives the card but is not drawn. */
+.module input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.module__mark {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 215, 0, 0.4);
+  background: rgba(255, 215, 0, 0.1);
+  color: var(--gold);
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.module__body { display: grid; gap: 3px; min-width: 0; }
+
+.module__name {
+  font-size: 0.9rem;
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--text);
+}
+
+.module__blurb {
+  font-size: 0.74rem;
+  line-height: 1.4;
+  color: var(--text-muted);
+}
+
+.module__tick {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1px solid rgba(230, 230, 250, 0.22);
+  color: transparent;
+  transition: color 0.16s var(--ease), background 0.16s var(--ease),
+    border-color 0.16s var(--ease);
+}
+
+.module:has(input:checked) .module__tick {
+  color: #1b0b2e;
+  background: var(--gold);
+  border-color: var(--gold);
+}
+
+/* Cards fly out of the centre of the grid: each is pushed back to that point,
+   then released, with a short stagger so they arrive in a sweep. */
+@keyframes module-split {
+  from {
+    opacity: 0;
+    transform: translate(var(--dx, 0), var(--dy, 0)) scale(0.18);
+  }
+  to {
+    opacity: 1;
+    transform: translate(0, 0) scale(1);
+  }
+}
+
+.module-grid[data-split="pending"] .module { opacity: 0; }
+
+.module-grid[data-split="1"] .module {
+  animation: module-split 620ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: calc(var(--i, 0) * 45ms);
+}
+
+.module-grid[data-split="instant"] .module { opacity: 1; }
+
+@media (prefers-reduced-motion: reduce) {
+  .module-grid[data-split] .module {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
+
+.mods__actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.mods__count { font-size: 0.8rem; color: var(--text-muted); }
+.mods__count span { color: var(--text); font-weight: 700; }
+.mods__actions .btn { width: auto; min-width: 200px; }
+
+.page--modules {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  padding-bottom: 18px;
+}
+
+.page--modules .mods { flex: 1 0 auto; }
+
+/* The footer belongs to the page, not to the card grid. */
+.page--modules .page-footer { padding: 26px clamp(18px, 5vw, 64px) 4px; }
+
+@media (max-width: 1080px) {
+  .module-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+@media (max-width: 720px) {
+  .module-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .mods__actions .btn { width: 100%; }
+}
+
+@media (max-width: 460px) {
+  .module-grid { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* --------------------------------------------------------------------------
    Onboarding — the business profile, captured right after registration
    -------------------------------------------------------------------------- */
 .page--onboarding {
@@ -1346,6 +1555,13 @@ code {
   color: #ffe2dc;
   font-size: 0.84rem;
 }
+
+/* A grid track can only shrink as far as the widest thing inside it. A
+   <select> is as wide as its longest option, so on a phone the whole form was
+   pushing the page sideways; these three lines let it shrink instead. */
+.page { overflow-x: clip; }
+.field { min-width: 0; }
+.control, .control__input, .control__select, .control--split > * { min-width: 0; max-width: 100%; }
 
 .onb__section {
   display: grid;

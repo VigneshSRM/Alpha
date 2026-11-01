@@ -415,6 +415,7 @@ async function main() {
         marks: document.querySelectorAll('.field__req').length,
         note: (document.querySelector('.form__req-note') || {}).textContent || '',
         requiredFields: document.querySelectorAll('[aria-required="true"]').length,
+        wolf: document.querySelectorAll('.scene__photo').length,
         footerRightGap: Math.round(window.innerWidth - box.right),
         footerTextGap: Math.round(window.innerWidth
           - footer.querySelector('span:last-child').getBoundingClientRect().right),
@@ -438,6 +439,8 @@ async function main() {
     check('required fields are marked before the first submit',
       onboard.marks >= 11 && /are required/i.test(onboard.note) && onboard.requiredFields >= 11,
       `${onboard.marks} marks, ${onboard.requiredFields} aria-required`);
+    check('the business-profile page has no wolf photograph', onboard.wolf === 0,
+      `${onboard.wolf} scene images`);
     check('the footer sits in the right-hand corner',
       onboard.footerTextGap <= 80 && onboard.footerTextGap > 0
         && onboard.footerJustify === 'flex-end',
@@ -574,15 +577,63 @@ async function main() {
       form.requestSubmit();
       return 'submitted';
     }`);
-    const afterOnboarding = await waitForPath('/dashboard');
+    const afterOnboarding = await waitForPath('/modules');
+    const modulePicker = await evaluate(`() => {
+      const cards = [...document.querySelectorAll('.module')];
+      const grid = document.querySelector('[data-module-grid]');
+      return {
+        path: location.pathname,
+        cards: cards.length,
+        names: cards.map((card) => (card.querySelector('.module__name') || {}).textContent || ''),
+        split: grid ? grid.getAttribute('data-split') : '',
+        firstCardOpacity: cards.length ? getComputedStyle(cards[0]).opacity : '0',
+        count: (document.querySelector('[data-chosen-count]') || {}).textContent || '',
+      };
+    }`);
+    check('the profile saves and the module picker opens',
+      afterOnboarding === '/modules' && modulePicker.cards === 10,
+      `${modulePicker.path} — ${modulePicker.cards} cards`);
+    check('the ten modules are the ones asked for',
+      modulePicker.names.join('|') === 'POS|Sales|Inventory|Purchase|'
+        + 'Alpha and Luna Customers (CRM)|Documents|Templates|Customization|Reports|Settings',
+      modulePicker.names.join(' | '));
+    check('the cards split out of the centre point',
+      ['pending', '1', 'instant'].includes(modulePicker.split) && modulePicker.firstCardOpacity === '1',
+      `data-split=${modulePicker.split || '(none)'}, first card opacity ${modulePicker.firstCardOpacity}`);
+    await shot('19-modules.png', true);
+    check('nothing chosen yet is stated plainly', String(modulePicker.count).trim() === '0',
+      `${String(modulePicker.count).trim()} of 10`);
+
+    await evaluate(`() => {
+      const boxes = [...document.querySelectorAll('input[name="modules"]')];
+      ['pos', 'inventory', 'reports'].forEach((code) => {
+        const box = boxes.find((input) => input.value === code);
+        if (box) box.click();
+      });
+      return 'chosen';
+    }`);
+    const chosenCount = await evaluate(
+      `() => (document.querySelector('[data-chosen-count]') || {}).textContent || ''`);
+    check('choosing a card updates the count', chosenCount.trim() === '3', chosenCount.trim());
+
+    await evaluate(`() => {
+      const form = document.getElementById('modulesForm');
+      if (!form) return 'gone';
+      form.requestSubmit();
+      return 'submitted';
+    }`);
+    const afterModules = await waitForPath('/dashboard');
     const landed = await evaluate(`() => ({
       path: location.pathname,
       search: location.search,
       notice: (document.querySelector('.dash__notice') || {}).textContent || '',
+      wolf: document.querySelectorAll('.scene__photo').length,
     })`);
-    check('the profile saves and the dashboard opens',
-      afterOnboarding === '/dashboard' && /welcome=1/.test(landed.search),
+    check('the chosen modules open the dashboard',
+      afterModules === '/dashboard' && /welcome=1/.test(landed.search),
       `${landed.path}${landed.search}`);
+    check('the dashboard has no wolf photograph', landed.wolf === 0,
+      `${landed.wolf} scene images`);
     await shot('11-account-welcome.png', true);
 
     /* duplicate e-mail: the server answers 409 and the browser explains it */

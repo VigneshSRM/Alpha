@@ -1,6 +1,7 @@
 package in.alphagroup.portal.web;
 
 import in.alphagroup.portal.config.AlphaProperties;
+import in.alphagroup.portal.modules.ModuleService;
 import in.alphagroup.portal.onboarding.OnboardingService;
 import in.alphagroup.portal.policy.PhoneNumbers;
 import in.alphagroup.portal.user.PortalUser;
@@ -26,10 +27,13 @@ public class DashboardController {
 
     private final AlphaProperties properties;
     private final OnboardingService onboarding;
+    private final ModuleService modules;
 
-    public DashboardController(AlphaProperties properties, OnboardingService onboarding) {
+    public DashboardController(AlphaProperties properties, OnboardingService onboarding,
+            ModuleService modules) {
         this.properties = properties;
         this.onboarding = onboarding;
+        this.modules = modules;
     }
 
     @GetMapping("/dashboard")
@@ -43,6 +47,9 @@ public class DashboardController {
         // Nobody reaches the dashboard without a business behind the account.
         if (onboarding.forUser(user.getId()).isEmpty()) {
             return "redirect:/onboarding";
+        }
+        if (modules.selected(user.getId()).isEmpty()) {
+            return "redirect:/modules";
         }
 
         Map<String, Object> account = new LinkedHashMap<>();

@@ -8,7 +8,9 @@ target/
 .vscode/
 *.log
 
-# Secrets — never commit real database credentials
+# Secrets — never commit real database credentials.
+# The portal reads config/hibernate.properties; the example is committed.
+config/hibernate.properties
 .env
 .env.local
 

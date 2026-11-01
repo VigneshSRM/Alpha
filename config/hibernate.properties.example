@@ -1,0 +1,45 @@
+# ---------------------------------------------------------------------------
+# The only file the portal reads its credentials from.
+#
+#   cp config/hibernate.properties.example config/hibernate.properties
+#
+# and edit it. The real file is git-ignored; this example is not. Nothing here
+# is read from the environment, so this file is the single place to change when
+# the database or an API key moves.
+# ---------------------------------------------------------------------------
+
+# --- Database (MariaDB) ----------------------------------------------------
+spring.datasource.url=jdbc:mariadb://localhost:3306/alpha_portal
+spring.datasource.username=alpha
+spring.datasource.password=alpha
+spring.datasource.hikari.maximum-pool-size=10
+
+# --- Hibernate / JPA -------------------------------------------------------
+spring.jpa.properties.hibernate.jdbc.time_zone=UTC
+
+# --- API ------------------------------------------------------------------
+# The portal validates everything itself and calls no third-party service, so
+# there is no API key to fill in today. When one is added, it belongs here — for
+# example:
+# alpha.api.base-url=https://api.example.com
+# alpha.api.key=replace-me
+
+# --- Security --------------------------------------------------------------
+# Signs the remember-me cookie. Generate one with:
+#   openssl rand -base64 48
+alpha.security.remember-me-key=change-me-in-production-please-use-64-random-chars
+alpha.security.remember-me-days=14
+alpha.security.login-max-attempts=5
+alpha.security.login-window-seconds=900
+alpha.security.bcrypt-strength=12
+
+# --- Server ----------------------------------------------------------------
+server.port=8080
+# true once the portal is behind HTTPS
+server.servlet.session.cookie.secure=false
+spring.thymeleaf.cache=false
+
+# --- The portal ------------------------------------------------------------
+alpha.app-name=Alpha Group of India
+alpha.support-email=help@alphagroup.in
+alpha.signup.enabled=true

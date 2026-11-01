@@ -6,8 +6,11 @@ These are **renders of the real Thymeleaf templates** in
 Boot server running.
 
 Provenance matters here, so plainly: the sandbox this was produced in has no
-JDK and no route to Maven Central, so `mvn spring-boot:run` could not be
-executed there. To still show what the pages look like, the templates were
+route to Maven Central, so the Spring and Jakarta jars cannot be resolved and
+`mvn spring-boot:run` could not be executed there. What *was* executed is the
+framework-free part — `policy/*`, `OnboardingRules`, `Modules` — compiled with
+javac and served by `scripts/sandbox/PortalHarness.java`, which is how the
+`preview/sandbox-run/` screenshots were taken. To still show what the pages look like, the templates were
 expanded offline (fragments inlined, `th:if` branches resolved, `th:each`
 checklist expanded, CSRF token and model values substituted) and the result was
 loaded in headless Chromium with the real stylesheet and JavaScript. The render
@@ -27,9 +30,8 @@ Consequences for reading them:
 To see the application itself:
 
 ```bash
-docker compose up --build      # MariaDB + Flyway + the app on :8080
-# or
-mvn spring-boot:run -Dspring-boot.run.profiles=dev
+cp config/hibernate.properties.example config/hibernate.properties
+mvn spring-boot:run            # MariaDB + Flyway + the app on :8080
 ```
 
 | File | Page |
@@ -42,3 +44,5 @@ mvn spring-boot:run -Dspring-boot.run.profiles=dev
 | `06-signup-mobile-error.png` | Same page with a too-short number: the field says what the selected country expects |
 |  | the button opens a searchable list of all 236 dialling codes (see `preview/sandbox-run/06-phone-picker.png`) |
 | `07-signup-mobile.png` | Request an account, 390×844 |
+| `08-onboarding.png` | “Set up your Business profile”, 1440×900 — no wolf photograph from here on, as asked |
+| `09-modules.png` | The module picker: ten cards that split out of the centre point of the page |

@@ -1,5 +1,10 @@
+# How the portal is put together. Nothing here is a credential and nothing here
+# is read from the environment: the database URL, its username and password, the
+# remember-me key and the API settings all come from config/hibernate.properties
+# (see config/hibernate.properties.example). To point the app somewhere else,
+# edit that file — no exports, no -D flags, no environment store.
 server:
-  port: ${PORT:8080}
+  port: 8080
   forward-headers-strategy: framework
   servlet:
     session:
@@ -7,7 +12,7 @@ server:
       cookie:
         http-only: true
         same-site: lax
-        secure: ${SESSION_COOKIE_SECURE:false}
+        secure: false          # config/hibernate.properties turns this on behind HTTPS
   error:
     whitelabel:
       enabled: false
@@ -17,12 +22,8 @@ spring:
     name: Alpha Group Portal
 
   datasource:
-    url: ${DB_URL:jdbc:mariadb://localhost:3306/alpha_portal}
-    username: ${DB_USERNAME:alpha}
-    password: ${DB_PASSWORD:alpha}
     driver-class-name: org.mariadb.jdbc.Driver
     hikari:
-      maximum-pool-size: ${DB_POOL_SIZE:10}
       connection-timeout: 5000
 
   jpa:
@@ -46,7 +47,7 @@ spring:
     timeout: 30m
 
   thymeleaf:
-    cache: ${THYMELEAF_CACHE:false}
+    cache: false
 
   web:
     resources:
@@ -55,22 +56,33 @@ spring:
           no-cache: true
 
 alpha:
-  app-name: ${APP_NAME:Alpha Group of India}
+  app-name: Alpha Group of India
   provider-name: Spring Security
-  support-email: ${SUPPORT_EMAIL:help@alphagroup.in}
+  support-email: help@alphagroup.in
 
   security:
-    # Signs the remember-me cookie. MUST be set to a long random value in prod.
-    remember-me-key: ${SECRET_KEY:change-me-in-production-please-use-64-random-chars}
+    # Every one of these can be overridden in config/hibernate.properties.
+    remember-me-key: change-me-in-production-please-use-64-random-chars
     remember-me-days: 14
-    login-max-attempts: ${LOGIN_MAX_ATTEMPTS:5}
-    login-window-seconds: ${LOGIN_WINDOW_SECONDS:900}
-    bcrypt-strength: ${BCRYPT_STRENGTH:12}
+    login-max-attempts: 5
+    login-window-seconds: 900
+    bcrypt-strength: 12
     reset-token-minutes: 60
 
   signup:
-    enabled: ${SIGNUP_ENABLED:true}
+    enabled: true
 
 logging:
   level:
     in.alphagroup.portal: INFO
+
+---
+# The credentials file, read from the working directory. Skipped under the test
+# profile, which brings its own in-memory H2 and must never touch MariaDB.
+# "optional:" keeps a fresh clone working before the file has been copied.
+spring:
+  config:
+    activate:
+      on-profile: "!test"
+    import:
+      - optional:file:./config/hibernate.properties

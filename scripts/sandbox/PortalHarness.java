@@ -1,6 +1,7 @@
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 
+import in.alphagroup.portal.modules.Modules;
 import in.alphagroup.portal.onboarding.OnboardingRules;
 import in.alphagroup.portal.policy.PasswordPolicy;
 import in.alphagroup.portal.policy.PhoneNumbers;
@@ -51,6 +52,7 @@ public final class PortalHarness {
         server.createContext("/api/password-check", PortalHarness::check);
         server.createContext("/signup", PortalHarness::signup);
         server.createContext("/onboarding", PortalHarness::onboarding);
+        server.createContext("/modules", PortalHarness::modules);
         server.createContext("/healthz", ex -> json(ex, 200, "{\"status\":\"ok\"}"));
         server.createContext("/", PortalHarness::statics);
 
@@ -209,7 +211,7 @@ public final class PortalHarness {
         Map<String, String> errors = OnboardingRules.validate(form);
         System.out.printf(Locale.ROOT, "POST /onboarding  %s -> %s%n",
                 form.getOrDefault("businessName", ""),
-                errors.isEmpty() ? "303 /dashboard?welcome=1" : "422 " + errors.keySet());
+                errors.isEmpty() ? "303 /modules" : "422 " + errors.keySet());
 
         if (!errors.isEmpty()) {
             // The real controller re-renders the page with the errors bound to
@@ -244,10 +246,7 @@ public final class PortalHarness {
             return;
         }
 
-        ex.getResponseHeaders().set("Location",
-                "/dashboard?welcome=1&business="
-                        + java.net.URLEncoder.encode(form.getOrDefault("businessName", ""),
-                                StandardCharsets.UTF_8).replace("+", "%20"));
+        ex.getResponseHeaders().set("Location", "/modules");
         ex.getResponseHeaders().set("Cache-Control", "no-store");
         ex.sendResponseHeaders(303, -1);
         ex.close();
@@ -318,6 +317,55 @@ public final class PortalHarness {
         return html.substring(0, open) + opening + marked;
     }
 
+    /* ---- the module picker ----------------------------------------------- */
+
+    private static void modules(HttpExchange ex) throws IOException {
+        if (!"POST".equalsIgnoreCase(ex.getRequestMethod())) {
+            statics(ex);
+            return;
+        }
+        String body = new String(ex.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
+        Map<String, String> form = parseForm(ex.getRequestHeaders().getFirst("Content-Type"), body);
+
+        List<String> chosen = new java.util.ArrayList<>();
+        for (String key : form.keySet()) {
+            if (key.equals("modules") && Modules.isKnown(form.get(key))) {
+                chosen.add(form.get(key));
+            }
+        }
+        // A repeated field is folded by parseForm, so read the raw body too.
+        for (String pair : body.split("&")) {
+            int eq = pair.indexOf('=');
+            if (eq <= 0) continue;
+            if (!decode(pair.substring(0, eq)).equals("modules")) continue;
+            String code = decode(pair.substring(eq + 1));
+            if (Modules.isKnown(code) && !chosen.contains(code)) {
+                chosen.add(code);
+            }
+        }
+
+        System.out.printf(Locale.ROOT, "POST /modules  %s -> %s%n", chosen,
+                chosen.isEmpty() ? "422 (nothing chosen)" : "303 /dashboard?welcome=1");
+
+        if (chosen.isEmpty()) {
+            String html = Files.readString(site.resolve("modules.html"), StandardCharsets.UTF_8);
+            String alert = "<p class=\"onb__alert\" role=\"alert\">"
+                    + "Choose at least one module — you can switch the rest on later.</p>";
+            html = html.replace("<ul class=\"module-grid\"", alert + "\n\n    <ul class=\"module-grid\"");
+            byte[] data = html.getBytes(StandardCharsets.UTF_8);
+            ex.getResponseHeaders().set("Content-Type", "text/html; charset=utf-8");
+            ex.getResponseHeaders().set("Cache-Control", "no-store");
+            ex.sendResponseHeaders(422, data.length);
+            try (OutputStream out = ex.getResponseBody()) { out.write(data); }
+            return;
+        }
+
+        ex.getResponseHeaders().set("Location", "/dashboard?welcome=1&modules=" + chosen.size());
+        ex.getResponseHeaders().set("Cache-Control", "no-store");
+        ex.sendResponseHeaders(303, -1);
+        ex.close();
+    }
+
     /* ---- static files ---------------------------------------------------- */
 
     private static void statics(HttpExchange ex) throws IOException {
@@ -331,6 +379,7 @@ public final class PortalHarness {
             case "/signup" -> "signup.html";
             case "/account" -> "dashboard.html";
             case "/onboarding" -> "onboarding.html";
+            case "/modules" -> "modules.html";
             case "/reset-password" -> "reset-password.html";
             default -> path.replaceFirst("^/", "");
         };
@@ -342,6 +391,13 @@ public final class PortalHarness {
             return;
         }
         byte[] data = Files.readAllBytes(target);
+        if (file.equals("dashboard.html") || file.equals("dashboard-welcome.html")) {
+            // The page counts down from data-expires; keep it honest at serve time.
+            long expires = java.time.Instant.now().getEpochSecond() + 1800;
+            String html = new String(data, StandardCharsets.UTF_8)
+                    .replaceAll("data-expires=\"[0-9]+\"", "data-expires=\"" + expires + "\"");
+            data = html.getBytes(StandardCharsets.UTF_8);
+        }
         ex.getResponseHeaders().set("Content-Type", contentType(file));
         ex.getResponseHeaders().set("Cache-Control", "no-store");
         ex.sendResponseHeaders(200, data.length);

@@ -14,7 +14,8 @@ What is missing is the Spring wiring around those calls — request binding, CSR
 JPA, Spring Session — because Maven Central is unreachable from the sandbox
 where this was written, so those jars cannot be resolved and the application
 cannot be built there. On a machine with network access use `mvn test` /
-`docker compose up --build` instead; the harness is only for demonstrating the
+`mvn spring-boot:run` instead (after copying `config/hibernate.properties.example`);
+the harness is only for demonstrating the
 decision-making code.
 
 ## Compile and run

@@ -4,8 +4,6 @@
 
 <body class="page page--app" th:attr="data-policy=${policyJson}">
 
-<th:block th:replace="~{fragments :: scene}"></th:block>
-
 <header class="topbar">
   <a class="topbar__brand" th:href="@{/dashboard}">
     <img th:src="@{/img/alpha-logo-light.png(v=${assetV})}"
