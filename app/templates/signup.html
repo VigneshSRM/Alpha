@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block title %}Create account · {{ app_name }}{% endblock %}
-{% block body_class %}page page--auth{% endblock %}
+{% block body_class %}page page--auth page--signup{% endblock %}
 
 {% block content %}
 <div class="scene" aria-hidden="true">
@@ -21,23 +21,14 @@
 </header>
 
 <main class="stage">
-  <section class="intro">
-    <p class="intro__eyebrow">The Way to Lead</p>
-    <h2 class="intro__title">Join the<br>group portal.</h2>
-    <p class="intro__copy">
-      One account unlocks every Alpha Group of India system. Set a strong
-      password once — we will validate it on the server before your account is
-      created.
-    </p>
-    <ul class="intro__points">
-      <li>Verified e-mail, single identity</li>
-      <li>Password checked against the group policy</li>
-      <li>Row-level security on all group data</li>
-    </ul>
-  </section>
+  <div class="stage__col">
+    <header class="stage__intro">
+      <p class="intro__eyebrow">The Way to Lead</p>
+      <p class="stage__headline">Join the group portal.</p>
+    </header>
 
-  <section class="access" aria-labelledby="signupHeading">
-    <p class="access__eyebrow">New account</p>
+    <section class="access" aria-labelledby="signupHeading">
+    <p class="access__eyebrow">Client portal</p>
     <h1 id="signupHeading">Create your account</h1>
     <p class="access__sub">Your details are verified by the server, not the browser.</p>
 
@@ -156,8 +147,8 @@
         </p>
 
         <p class="hint" id="passwordHint">
-          {{ policy.minLength }}+ characters with upper and lower case, {{ policy.minDigits }} numbers
-          and {{ policy.minSpecial }} symbols. The server confirms this when you submit.
+          {{ policy.minLength }}+ characters · upper &amp; lower case · {{ policy.minDigits }} numbers ·
+          {{ policy.minSpecial }} symbols
         </p>
         <p class="field__error" id="passwordError" role="alert">{{ errors.get('password', '') }}</p>
       </div>
@@ -208,6 +199,7 @@
       </p>
     </form>
   </section>
+  </div>
 </main>
 
 <footer class="page-footer">

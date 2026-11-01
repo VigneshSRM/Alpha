@@ -22,21 +22,13 @@
 </header>
 
 <main class="stage">
-  <section class="intro">
-    <p class="intro__eyebrow">The Way to Lead</p>
-    <h2 class="intro__title">One group.<br>One place to begin.</h2>
-    <p class="intro__copy">
-      Sign in to reach every Alpha Group of India service — ventures, operations
-      and people — through a single protected gateway.
-    </p>
-    <ul class="intro__points">
-      <li>Unified access across all group companies</li>
-      <li>Bank-grade sessions, audited by Supabase</li>
-      <li>Passwords protected by a 12-character policy</li>
-    </ul>
-  </section>
+  <div class="stage__col">
+    <header class="stage__intro">
+      <p class="intro__eyebrow">The Way to Lead</p>
+      <p class="stage__headline">One place to begin.</p>
+    </header>
 
-  <section class="access" aria-labelledby="loginHeading">
+    <section class="access" aria-labelledby="loginHeading">
     <p class="access__eyebrow">Client portal</p>
     <h1 id="loginHeading">Welcome back</h1>
     <p class="access__sub">Sign in with your Alpha Group credentials.</p>
@@ -156,8 +148,8 @@
         </p>
 
         <p class="hint" id="passwordHint">
-          {{ policy.minLength }}+ characters with upper and lower case, {{ policy.minDigits }} numbers
-          and {{ policy.minSpecial }} symbols.
+          {{ policy.minLength }}+ characters · upper &amp; lower case · {{ policy.minDigits }} numbers ·
+          {{ policy.minSpecial }} symbols
         </p>
         <p class="field__error" id="passwordError" role="alert">{{ errors.get('password', '') }}</p>
       </div>
@@ -192,6 +184,7 @@
       {% endif %}
     </form>
   </section>
+  </div>
 </main>
 
 <footer class="page-footer">

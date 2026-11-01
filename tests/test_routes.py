@@ -134,7 +134,10 @@ class AuthRouteTests(unittest.TestCase):
         html = response.get_data(as_text=True)
         self.assertEqual(response.status_code, 200)
         self.assertIn("alpha-logo-light.png", html)
-        self.assertIn("hero-bg.png", html)
+        self.assertIn("hero-bg.jpg", html)
+        # Full-bleed scene: form column on the left, photo on the right.
+        self.assertIn('class="scene__photo"', html)
+        self.assertIn('class="stage__col"', html)
         self.assertIn('id="policyInfoBtn"', html)
         self.assertIn('id="togglePassword"', html)
         self.assertIn("At least 12 characters", html)
