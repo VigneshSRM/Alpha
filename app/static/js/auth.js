@@ -254,18 +254,24 @@
     var stateText = $("passwordState");
     var checklist = popover ? popover.querySelectorAll("[data-rule]") : [];
     var checkEndpoint = form.getAttribute("data-check-endpoint");
-    var checkTimer = null;
     var checkSeq = 0;
+
+    // Hover opens it on a mouse; a click/tap "pins" it so the synthesized
+    // mouseleave that touch devices emit cannot close it straight away.
+    var pinned = false;
 
     function openPopover() {
       if (!popover) return;
       popover.hidden = false;
       if (policyBtn) policyBtn.setAttribute("aria-expanded", "true");
+      // Always show fresh ticks — never a stale verdict.
+      if (passwordInput && passwordInput.value) forceCheck();
     }
 
     function closePopover() {
       if (!popover) return;
       popover.hidden = true;
+      pinned = false;
       if (policyBtn) policyBtn.setAttribute("aria-expanded", "false");
     }
 
@@ -287,21 +293,46 @@
       }
     }
 
-    function askServer() {
+    var lastSent = null;
+    var inFlight = false;
+    var queued = false;
+
+    function resetIndicator() {
+      paintChecklist(null);
+      setPasswordState("empty", "");
+      if (popMessage) {
+        popMessage.textContent =
+          "Enforced by the authentication server. The tick turns green when your password passes.";
+      }
+    }
+
+    /**
+     * Ask the server whether this password satisfies the policy.
+     *
+     * Runs immediately on input (no setTimeout: browsers throttle timers in
+     * background tabs, which made the tick appear late or not at all). At most
+     * one request is in flight; the newest value is sent as soon as it lands.
+     */
+    function askServer(retry) {
       if (!checkEndpoint || !passwordInput) return;
+
       var password = passwordInput.value;
       var seq = ++checkSeq;
 
       if (!password) {
-        paintChecklist(null);
-        setPasswordState("empty", "");
-        if (popMessage) {
-          popMessage.textContent =
-            "Enforced by the authentication server. The tick turns green when your password passes.";
-        }
+        lastSent = "";
+        queued = false;
+        resetIndicator();
         return;
       }
 
+      if (inFlight) {
+        queued = true;
+        return;
+      }
+
+      inFlight = true;
+      lastSent = password;
       setPasswordState("pending", "Checking password…");
 
       var payload = new FormData();
@@ -309,6 +340,14 @@
       payload.append("email", emailInput ? emailInput.value : "");
       payload.append("name", nameInput ? nameInput.value : "");
       payload.append("csrf_token", tokenField ? tokenField.value : "");
+
+      function finish() {
+        inFlight = false;
+        if (queued) {
+          queued = false;
+          askServer();
+        }
+      }
 
       fetch(checkEndpoint, {
         method: "POST",
@@ -318,51 +357,86 @@
           "X-CSRF-Token": tokenField ? tokenField.value : ""
         },
         body: payload,
-        credentials: "same-origin"
+        credentials: "same-origin",
+        cache: "no-store"
       })
         .then(function (response) {
           return response.json().catch(function () { return null; });
         })
         .then(function (data) {
-          if (seq !== checkSeq || !data) return;
-          if (data.csrfToken && tokenField) tokenField.value = data.csrfToken;
-          paintChecklist(data.checks);
-          if (data.empty) {
-            setPasswordState("empty", "");
+          if (seq !== checkSeq) {
+            finish();
             return;
           }
+          if (!data) {
+            // Non-JSON answer (proxy/error page): retry once, then stay neutral.
+            finish();
+            if (!retry) askServer(true);
+            else resetIndicator();
+            return;
+          }
+          if (data.code === "csrf" && data.csrfToken && tokenField) {
+            tokenField.value = data.csrfToken;
+            finish();
+            if (!retry) askServer(true);
+            return;
+          }
+          if (data.empty) {
+            finish();
+            resetIndicator();
+            return;
+          }
+
+          paintChecklist(data.checks);
           if (data.valid) {
             setPasswordState("valid", "Password meets the policy.");
             if (popMessage) {
               popMessage.textContent =
-                "This password meets the Alpha Group policy. Submitting it to the server…";
+                "This password meets the Alpha Group policy — you can continue.";
             }
           } else {
-            setPasswordState("pending", data.violations && data.violations[0] ? data.violations[0] : "Password does not meet the policy yet.");
-            if (popMessage) {
-              popMessage.textContent =
-                (data.violations && data.violations[0]) || "Password does not meet the policy yet.";
-            }
+            var reason =
+              (data.violations && data.violations[0]) ||
+              "Password does not meet the policy yet.";
+            setPasswordState("invalid", reason);
+            if (popMessage) popMessage.textContent = reason;
           }
+          finish();
         })
         .catch(function () {
-          if (seq !== checkSeq) return;
-          setPasswordState("empty", "");
+          finish();
+          if (!retry) askServer(true);
+          else resetIndicator();
         });
     }
 
-    function scheduleCheck() {
-      if (checkTimer) window.clearTimeout(checkTimer);
-      checkTimer = window.setTimeout(askServer, 320);
+    /* Immediate + trailing-edge check: no timers involved. */
+    function onPasswordInput() {
+      if (passwordInput.value === lastSent && !queued) return;
+      askServer();
+    }
+
+    /* Ask again even if the value has not changed (focus, popover open). */
+    function forceCheck() {
+      lastSent = null;
+      askServer();
     }
 
     if (policyBtn && popover) {
       policyBtn.addEventListener("mouseenter", openPopover);
-      policyBtn.addEventListener("focus", openPopover);
+      // No "focus" listener: on touch devices focus fires just before click,
+      // which made the popover open and immediately close. Keyboard users
+      // still get it because Enter/Space trigger "click".
       policyBtn.addEventListener("click", function (event) {
         event.preventDefault();
-        if (popover.hidden) openPopover();
-        else closePopover();
+        if (popover.hidden) {
+          pinned = true;
+          openPopover();
+        } else if (pinned) {
+          closePopover();
+        } else {
+          pinned = true;
+        }
       });
 
       // Keep it open while the pointer is over the popover itself.
@@ -370,6 +444,7 @@
       function scheduleClose() {
         if (closeTimer) window.clearTimeout(closeTimer);
         closeTimer = window.setTimeout(function () {
+          if (pinned) return;
           if (popover.contains(document.activeElement)) return;
           closePopover();
         }, 180);
@@ -379,8 +454,10 @@
         if (closeTimer) window.clearTimeout(closeTimer);
       });
       popover.addEventListener("mouseleave", scheduleClose);
-      popover.addEventListener("keydown", function (event) {
-        if (event.key === "Escape") {
+      // Escape works wherever focus is (click-pinned popovers keep focus on
+      // the "!" button, not inside the popover).
+      document.addEventListener("keydown", function (event) {
+        if (event.key === "Escape" && popover && !popover.hidden) {
           closePopover();
           if (policyBtn) policyBtn.focus();
         }
@@ -393,12 +470,11 @@
     }
 
     if (passwordInput) {
-      passwordInput.addEventListener("input", scheduleCheck);
-      passwordInput.addEventListener("blur", function () {
-        if (checkTimer) window.clearTimeout(checkTimer);
-        askServer();
-      });
-      askServer();
+      passwordInput.addEventListener("input", onPasswordInput);
+      passwordInput.addEventListener("change", onPasswordInput);
+      passwordInput.addEventListener("blur", function () { forceCheck(); });
+      if (passwordInput.value) askServer();
+      else resetIndicator();
     }
 
     /* --- strong-password suggestion (signup popover) ---------------- */
