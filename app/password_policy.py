@@ -87,11 +87,11 @@ class Rule:
 
 
 RULES: tuple[Rule, ...] = (
-    Rule("length", "12 characters minimum", "Aim for a memorable passphrase"),
-    Rule("uppercase", "1 uppercase letter", "A–Z"),
-    Rule("lowercase", "1 lowercase letter", "a–z"),
-    Rule("digits", "2 numbers", "0–9"),
-    Rule("special", "2 special characters", "! @ # $ % & *"),
+    Rule("length", "At least 12 characters", "A memorable passphrase works well"),
+    Rule("uppercase", "One uppercase letter", "A–Z"),
+    Rule("lowercase", "One lowercase letter", "a–z"),
+    Rule("digits", "Two numbers", "0–9"),
+    Rule("special", "Two special characters", "! @ # $ % & *"),
     Rule("complexity", "No common patterns", "No names, e-mail or sequences"),
 )
 

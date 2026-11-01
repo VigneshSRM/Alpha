@@ -3,213 +3,227 @@
 {% block body_class %}page page--auth{% endblock %}
 
 {% block content %}
-<div class="backdrop" aria-hidden="true">
-  <span class="backdrop__orb backdrop__orb--gold"></span>
-  <span class="backdrop__orb backdrop__orb--ember"></span>
-  <span class="backdrop__grid"></span>
+<div class="scene" aria-hidden="true">
+  <img class="scene__photo" src="{{ url_for('static', filename='img/hero-bg.jpg') }}" alt="" fetchpriority="high">
+  <div class="scene__wash"></div>
+  <div class="scene__vignette"></div>
 </div>
 
-<main class="shell">
-  <section class="card" aria-labelledby="signupHeading">
-    {% include "partials/brand.html" %}
+<header class="masthead">
+  <a class="masthead__brand" href="{{ url_for('auth.login') }}">
+    <img src="{{ url_for('static', filename='img/alpha-logo-light.png') }}"
+         alt="{{ app_name }} — {{ tagline }}" width="1997" height="787">
+  </a>
+  <p class="masthead__meta">
+    <span class="dot-live" aria-hidden="true"></span>
+    Secure client portal
+  </p>
+</header>
 
-    <div class="panel">
-      <header class="panel__head">
-        <img class="panel__logo" src="{{ url_for('static', filename='img/alpha-logo.png') }}"
-             alt="{{ app_name }}" width="1997" height="787">
-        <p class="eyebrow"><span class="eyebrow__line" aria-hidden="true"></span>Join the group</p>
-        <h1 id="signupHeading">Create your account</h1>
-        <p class="panel__sub">Set a strong password — it protects every Alpha Group service.</p>
-      </header>
+<main class="stage">
+  <section class="intro">
+    <p class="intro__eyebrow">The Way to Lead</p>
+    <h2 class="intro__title">Join the<br>group portal.</h2>
+    <p class="intro__copy">
+      One account unlocks every Alpha Group of India system. Set a strong
+      password once — we will validate it on the server before your account is
+      created.
+    </p>
+    <ul class="intro__points">
+      <li>Verified e-mail, single identity</li>
+      <li>Password checked against the group policy</li>
+      <li>Row-level security on all group data</li>
+    </ul>
+  </section>
 
-      {% if error %}
-      <div class="alert alert--error" role="alert" data-server-alert>
-        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"
-             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <circle cx="12" cy="12" r="9"/><path d="M12 8v5"/><path d="M12 16.5v.01"/>
-        </svg>
-        <span>{{ error }}</span>
-      </div>
-      {% endif %}
+  <section class="access" aria-labelledby="signupHeading">
+    <p class="access__eyebrow">New account</p>
+    <h1 id="signupHeading">Create your account</h1>
+    <p class="access__sub">Your details are verified by the server, not the browser.</p>
 
-      <div class="alert alert--success" id="formSuccess" role="status" hidden>
-        <span id="formSuccessText">Account created. Redirecting…</span>
-      </div>
-
-      <form class="form" id="signupForm" method="post" action="{{ url_for('auth.signup') }}"
-            novalidate data-mode="signup">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-
-        <div class="field" data-field="name">
-          <label class="field__label" for="name">Full name</label>
-          <div class="control">
-            <span class="control__icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"
-                   stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="8" r="3.6"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/>
-              </svg>
-            </span>
-            <input class="control__input" id="name" name="name" type="text" autocomplete="name"
-                   placeholder="Your full name" value="{{ form.name or '' }}" maxlength="80" required
-                   aria-describedby="nameError">
-          </div>
-          <p class="field__error" id="nameError" role="alert">{{ errors.get('name', '') }}</p>
-        </div>
-
-        <div class="field" data-field="email">
-          <label class="field__label" for="email">Work e-mail</label>
-          <div class="control">
-            <span class="control__icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"
-                   stroke-linecap="round" stroke-linejoin="round">
-                <rect x="3" y="5" width="18" height="14" rx="3"/><path d="m4 7.5 8 5.5 8-5.5"/>
-              </svg>
-            </span>
-            <input class="control__input" id="email" name="email" type="email" inputmode="email"
-                   autocomplete="email" spellcheck="false" placeholder="name@alphagroup.in"
-                   value="{{ form.email or '' }}" maxlength="254" required aria-describedby="emailError">
-          </div>
-          <p class="field__error" id="emailError" role="alert">{{ errors.get('email', '') }}</p>
-        </div>
-
-        <div class="field" data-field="password">
-          <div class="field__top">
-            <label class="field__label" for="password">Password</label>
-            <div class="field__tools">
-              <button type="button" class="pill-btn" id="policyInfoBtn" aria-haspopup="dialog"
-                      aria-controls="policyModal">
-                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor"
-                     stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 7.8v.01"/>
-                </svg>
-                Password policy
-              </button>
-            </div>
-          </div>
-
-          <div class="control">
-            <span class="control__icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"
-                   stroke-linecap="round" stroke-linejoin="round">
-                <rect x="4" y="10" width="16" height="10" rx="3"/><path d="M8 10V7.5a4 4 0 0 1 8 0V10"/>
-                <path d="M12 14v2.5"/>
-              </svg>
-            </span>
-            <input class="control__input control__input--password" id="password" name="password"
-                   type="password" autocomplete="new-password" placeholder="Create a strong password"
-                   maxlength="128" required aria-describedby="passwordError capsLock passwordRules"
-                   data-generate-target>
-            <button class="control__action" type="button" id="togglePassword" aria-label="Show password"
-                    aria-pressed="false" title="Show password">
-              <svg class="icon-eye" viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor"
-                   stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z"/>
-                <circle cx="12" cy="12" r="3.2"/>
-              </svg>
-              <svg class="icon-eye-off" viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor"
-                   stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" hidden>
-                <path d="M4 4l16 16"/>
-                <path d="M9.6 6.1A9.9 9.9 0 0 1 12 5.5c6 0 9.5 6.5 9.5 6.5a17 17 0 0 1-2.7 3.6"/>
-                <path d="M6.2 7.7A17 17 0 0 0 2.5 12S6 18.5 12 18.5a9.6 9.6 0 0 0 3.6-.7"/>
-                <path d="M10.1 10.3a2.7 2.7 0 0 0 3.7 3.8"/>
-              </svg>
-            </button>
-          </div>
-
-          <p class="hint hint--caps" id="capsLock" hidden>
-            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"
-                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M12 4 5 11h4v4h6v-4h4Z"/><path d="M8 20h8"/>
-            </svg>
-            Caps Lock is on
-          </p>
-
-          <div class="meter" id="strengthMeter" data-strength="weak" hidden>
-            <div class="meter__bars" aria-hidden="true">
-              <span></span><span></span><span></span><span></span>
-            </div>
-            <span class="meter__label" id="strengthLabel">Too short</span>
-          </div>
-
-          <ul class="rules" id="passwordRules" aria-label="Password requirements">
-            {% for rule in rules %}
-            <li class="rule" data-rule="{{ rule.key }}">
-              <span class="rule__mark" aria-hidden="true">
-                <svg class="rule__tick" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor"
-                     stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
-                <span class="rule__dot"></span>
-              </span>
-              <span class="rule__text">{{ rule.label }}<em>{{ rule.hint }}</em></span>
-            </li>
-            {% endfor %}
-          </ul>
-
-          <p class="field__error" id="passwordError" role="alert">{{ errors.get('password', '') }}</p>
-        </div>
-
-        <div class="field" data-field="confirm_password">
-          <label class="field__label" for="confirm_password">Confirm password</label>
-          <div class="control">
-            <span class="control__icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"
-                   stroke-linecap="round" stroke-linejoin="round">
-                <rect x="4" y="10" width="16" height="10" rx="3"/><path d="M8 10V7.5a4 4 0 0 1 8 0V10"/>
-                <path d="m9.5 15 1.8 1.8 3.2-3.4"/>
-              </svg>
-            </span>
-            <input class="control__input" id="confirm_password" name="confirm_password" type="password"
-                   autocomplete="new-password" placeholder="Repeat your password" maxlength="128" required
-                   aria-describedby="confirmError">
-            <button class="control__action" type="button" id="toggleConfirm" aria-label="Show confirmation password"
-                    aria-pressed="false" title="Show password">
-              <svg class="icon-eye" viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor"
-                   stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z"/>
-                <circle cx="12" cy="12" r="3.2"/>
-              </svg>
-              <svg class="icon-eye-off" viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor"
-                   stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" hidden>
-                <path d="M4 4l16 16"/>
-                <path d="M9.6 6.1A9.9 9.9 0 0 1 12 5.5c6 0 9.5 6.5 9.5 6.5a17 17 0 0 1-2.7 3.6"/>
-                <path d="M6.2 7.7A17 17 0 0 0 2.5 12S6 18.5 12 18.5a9.6 9.6 0 0 0 3.6-.7"/>
-                <path d="M10.1 10.3a2.7 2.7 0 0 0 3.7 3.8"/>
-              </svg>
-            </button>
-          </div>
-          <p class="hint hint--ok" id="confirmHint" hidden>Passwords match</p>
-          <p class="field__error" id="confirmError" role="alert">{{ errors.get('confirm_password', '') }}</p>
-        </div>
-
-        <button class="btn btn--primary" type="submit" id="submitBtn">
-          <span class="btn__label">Create account</span>
-          <span class="btn__spinner" aria-hidden="true"></span>
-          <svg class="btn__arrow" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor"
-               stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M5 12h13"/><path d="m12.5 5.5 6.5 6.5-6.5 6.5"/>
-          </svg>
-        </button>
-
-        <p class="form__alt">
-          Already registered?
-          <a class="link" href="{{ url_for('auth.login') }}">Sign in</a>
-        </p>
-      </form>
-
-      <footer class="panel__footer">
-        <span>© {{ year }} {{ app_name }}</span>
-        <span class="panel__dot" aria-hidden="true">•</span>
-        <span>{{ tagline }}</span>
-      </footer>
+    {% if error %}
+    <div class="flash flash--error" role="alert" data-flash>
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"
+           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="9"/><path d="M12 8v5"/><path d="M12 16.5v.01"/>
+      </svg>
+      <span data-flash-text>{{ error }}</span>
     </div>
+    {% else %}
+    <div class="flash flash--error" role="alert" data-flash hidden>
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"
+           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="9"/><path d="M12 8v5"/><path d="M12 16.5v.01"/>
+      </svg>
+      <span data-flash-text></span>
+    </div>
+    {% endif %}
+
+    <div class="flash flash--success" role="status" data-success hidden>
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2"
+           stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="9"/><path d="m8.5 12.5 2.5 2.5 4.5-5"/>
+      </svg>
+      <span data-success-text>Account created. Taking you to your dashboard…</span>
+    </div>
+
+    <form class="form" id="authForm" method="post" action="{{ url_for('auth.signup') }}"
+          novalidate autocomplete="on" data-mode="signup">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+      <div class="field" data-field="name">
+        <label class="field__label" for="name">Full name</label>
+        <div class="control">
+          <span class="control__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"
+                 stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="8" r="3.6"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/>
+            </svg>
+          </span>
+          <input class="control__input" id="name" name="name" type="text" autocomplete="name"
+                 placeholder="Your full name" value="{{ form.name or '' }}" maxlength="80" required
+                 aria-describedby="nameError">
+        </div>
+        <p class="field__error" id="nameError" role="alert">{{ errors.get('name', '') }}</p>
+      </div>
+
+      <div class="field" data-field="email">
+        <label class="field__label" for="email">Work e-mail</label>
+        <div class="control">
+          <span class="control__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"
+                 stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="5" width="18" height="14" rx="3"/><path d="m4 7.5 8 5.5 8-5.5"/>
+            </svg>
+          </span>
+          <input class="control__input" id="email" name="email" type="email" inputmode="email"
+                 autocomplete="email" spellcheck="false" placeholder="name@alphagroup.in"
+                 value="{{ form.email or '' }}" maxlength="254" required aria-describedby="emailError">
+        </div>
+        <p class="field__error" id="emailError" role="alert">{{ errors.get('email', '') }}</p>
+      </div>
+
+      <div class="field" data-field="password">
+        <div class="field__top">
+          <label class="field__label" for="password">Password</label>
+          <div class="field__tools">
+            <button type="button" class="pill-btn" id="policyInfoBtn" aria-haspopup="dialog"
+                    aria-controls="policyModal">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor"
+                   stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 7.8v.01"/>
+              </svg>
+              Password policy
+            </button>
+          </div>
+        </div>
+
+        <div class="control">
+          <span class="control__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"
+                 stroke-linecap="round" stroke-linejoin="round">
+              <rect x="4" y="10" width="16" height="10" rx="3"/><path d="M8 10V7.5a4 4 0 0 1 8 0V10"/>
+              <path d="M12 14v2.5"/>
+            </svg>
+          </span>
+          <input class="control__input control__input--password" id="password" name="password"
+                 type="password" autocomplete="new-password" placeholder="Create a strong password"
+                 maxlength="128" required aria-describedby="passwordError capsLock passwordHint"
+                 data-generate-target>
+          <button class="control__action" type="button" id="togglePassword"
+                  aria-label="Show password" aria-pressed="false" title="Show password">
+            <svg class="icon-eye" viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor"
+                 stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z"/>
+              <circle cx="12" cy="12" r="3.2"/>
+            </svg>
+            <svg class="icon-eye-off" viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor"
+                 stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M4 4l16 16"/>
+              <path d="M9.6 6.1A9.9 9.9 0 0 1 12 5.5c6 0 9.5 6.5 9.5 6.5a17 17 0 0 1-2.7 3.6"/>
+              <path d="M6.2 7.7A17 17 0 0 0 2.5 12S6 18.5 12 18.5a9.6 9.6 0 0 0 3.6-.7"/>
+              <path d="M10.1 10.3a2.7 2.7 0 0 0 3.7 3.8"/>
+            </svg>
+          </button>
+        </div>
+
+        <p class="hint hint--caps" id="capsLock" hidden>
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 4 5 11h4v4h6v-4h4Z"/><path d="M8 20h8"/>
+          </svg>
+          Caps Lock is on
+        </p>
+
+        <p class="hint" id="passwordHint">
+          {{ policy.minLength }}+ characters with upper and lower case, {{ policy.minDigits }} numbers
+          and {{ policy.minSpecial }} symbols. The server confirms this when you submit.
+        </p>
+        <p class="field__error" id="passwordError" role="alert">{{ errors.get('password', '') }}</p>
+      </div>
+
+      <div class="field" data-field="confirm_password">
+        <label class="field__label" for="confirm_password">Confirm password</label>
+        <div class="control">
+          <span class="control__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"
+                 stroke-linecap="round" stroke-linejoin="round">
+              <rect x="4" y="10" width="16" height="10" rx="3"/><path d="M8 10V7.5a4 4 0 0 1 8 0V10"/>
+              <path d="m9.5 15 1.8 1.8 3.2-3.4"/>
+            </svg>
+          </span>
+          <input class="control__input" id="confirm_password" name="confirm_password" type="password"
+                 autocomplete="new-password" placeholder="Repeat your password" maxlength="128" required
+                 aria-describedby="confirmError">
+          <button class="control__action" type="button" id="toggleConfirm"
+                  aria-label="Show confirmation password" aria-pressed="false" title="Show password">
+            <svg class="icon-eye" viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor"
+                 stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z"/>
+              <circle cx="12" cy="12" r="3.2"/>
+            </svg>
+            <svg class="icon-eye-off" viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor"
+                 stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M4 4l16 16"/>
+              <path d="M9.6 6.1A9.9 9.9 0 0 1 12 5.5c6 0 9.5 6.5 9.5 6.5a17 17 0 0 1-2.7 3.6"/>
+              <path d="M6.2 7.7A17 17 0 0 0 2.5 12S6 18.5 12 18.5a9.6 9.6 0 0 0 3.6-.7"/>
+              <path d="M10.1 10.3a2.7 2.7 0 0 0 3.7 3.8"/>
+            </svg>
+          </button>
+        </div>
+        <p class="field__error" id="confirmError" role="alert">{{ errors.get('confirm_password', '') }}</p>
+      </div>
+
+      <button class="btn btn--primary" type="submit" id="submitBtn">
+        <span class="btn__label">Create account</span>
+        <span class="btn__spinner" aria-hidden="true"></span>
+        <svg class="btn__arrow" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor"
+             stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M5 12h13"/><path d="m12.5 5.5 6.5 6.5-6.5 6.5"/>
+        </svg>
+      </button>
+
+      <p class="form__alt">
+        Already registered? <a class="link" href="{{ url_for('auth.login') }}">Sign in</a>
+      </p>
+    </form>
   </section>
 </main>
+
+<footer class="page-footer">
+  <span>© {{ year }} {{ app_name }}</span>
+  <span class="page-footer__sep" aria-hidden="true">•</span>
+  <span>{{ tagline }}</span>
+  <span class="page-footer__sep" aria-hidden="true">•</span>
+  <span>Sessions by {{ provider_name }} Auth</span>
+</footer>
 
 <div class="modal" id="policyModal" role="dialog" aria-modal="true" aria-labelledby="policyTitle" hidden>
   <div class="modal__scrim" data-close-policy></div>
   <div class="modal__card" role="document">
     <header class="modal__head">
       <div>
-        <p class="eyebrow"><span class="eyebrow__line" aria-hidden="true"></span>Account security</p>
+        <p class="access__eyebrow">Account security</p>
         <h2 id="policyTitle">Password policy</h2>
       </div>
       <button class="icon-btn" type="button" data-close-policy aria-label="Close password policy">
@@ -220,8 +234,8 @@
 
     <p class="modal__lead">
       Alpha Group passwords must be <strong>at least {{ policy.minLength }} characters</strong> and combine
-      upper case, lower case, numbers and symbols. Every rule below is enforced on the server as well as in
-      your browser.
+      upper case, lower case, numbers and symbols. The rules are enforced by the authentication server
+      on sign-up and on every password change.
     </p>
 
     <div class="policy-grid">
@@ -250,6 +264,12 @@
         <span class="policy-item__label">Maximum characters</span>
       </div>
     </div>
+
+    <ul class="policy-notes">
+      {% for rule in rules %}
+      <li><strong>{{ rule.label }}</strong> — {{ rule.hint }}</li>
+      {% endfor %}
+    </ul>
 
     <div class="policy-columns">
       <div>
@@ -290,6 +310,6 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="{{ url_for('static', filename='js/password-policy.js') }}" defer></script>
+<script src="{{ url_for('static', filename='js/password-generator.js') }}" defer></script>
 <script src="{{ url_for('static', filename='js/auth.js') }}" defer></script>
 {% endblock %}

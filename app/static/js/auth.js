@@ -1,18 +1,17 @@
 /* ==========================================================================
-   Alpha Group of India — login / signup interactions
-   Live policy checklist, password visibility, policy dialog, async submit.
+   Alpha Group of India — portal interactions
+
+   IMPORTANT: this file performs NO validation. It only improves the feel of
+   the form (password visibility, caps-lock hint, dialogs, spinner) and then
+   renders whatever the backend decided. Every rule — e-mail shape, password
+   policy, credentials, duplicates — is judged server side.
    ========================================================================== */
 (function () {
   "use strict";
 
-  var policy = window.AlphaPolicy;
-  if (!policy) return;
-
   function $(id) { return document.getElementById(id); }
 
-  function fieldOf(input) {
-    return input ? input.closest("[data-field]") : null;
-  }
+  function fieldOf(input) { return input ? input.closest("[data-field]") : null; }
 
   function setFieldError(input, message) {
     var field = fieldOf(input);
@@ -20,71 +19,79 @@
     var error = field.querySelector(".field__error");
     if (error) error.textContent = message || "";
     field.classList.toggle("is-invalid", Boolean(message));
+    field.classList.remove("is-valid");
     input.setAttribute("aria-invalid", message ? "true" : "false");
   }
 
-  function setFieldValid(input, valid) {
+  function clearFieldError(input) {
+    if (!input) return;
     var field = fieldOf(input);
     if (!field) return;
-    field.classList.toggle("is-valid", Boolean(valid));
+    var error = field.querySelector(".field__error");
+    if (error) error.textContent = "";
+    field.classList.remove("is-invalid");
+    input.removeAttribute("aria-invalid");
   }
 
-  function showAlert(message, kind) {
-    var alert = document.querySelector("[data-server-alert]");
-    if (!alert) {
-      alert = document.createElement("div");
-      alert.className = "alert alert--" + (kind || "error");
-      alert.setAttribute("role", "alert");
-      alert.setAttribute("data-server-alert", "");
-      var head = document.querySelector(".panel__head");
-      if (head && head.parentNode) head.parentNode.insertBefore(alert, head.nextSibling);
+  /* ------------------------------------------------------------------ */
+  /* Flash messages                                                     */
+  /* ------------------------------------------------------------------ */
+  function flashBox(kind) {
+    var el = document.querySelector("[data-flash]");
+    if (el && kind !== "success") return el;
+    return document.querySelector("[data-success]");
+  }
+
+  function showFlash(message, kind) {
+    var box;
+    if (kind === "success") {
+      box = document.querySelector("[data-success]");
+    } else if (kind === "notice") {
+      // Reuse the error box styled as a notice if no notice slot exists.
+      box = document.querySelector("[data-flash]");
+      if (box) box.classList.remove("flash--error");
+      if (box) box.classList.add("flash--notice");
+    } else {
+      box = document.querySelector("[data-flash]");
+      if (box) {
+        box.classList.remove("flash--notice");
+        box.classList.add("flash--error");
+      }
     }
-    alert.className = "alert alert--" + (kind || "error");
-    alert.innerHTML = "";
-    var span = document.createElement("span");
-    span.textContent = message;
-    alert.appendChild(span);
-    alert.hidden = false;
-    alert.scrollIntoView({ block: "nearest", behavior: "smooth" });
-  }
-
-  function hideAlert() {
-    var alert = document.querySelector("[data-server-alert]");
-    if (alert) {
-      alert.hidden = true;
-      alert.textContent = "";
-    }
-  }
-
-  function showSuccess(message) {
-    var box = $("formSuccess");
-    var text = $("formSuccessText");
-    if (!box || !text) return;
-    text.textContent = message;
+    if (!box) return;
+    var text = box.querySelector("[data-flash-text], [data-success-text]");
+    if (text) text.textContent = message;
     box.hidden = false;
+    try {
+      box.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    } catch (error) {
+      /* older engines */
+    }
   }
 
-  /**
-   * Reflect the revealed/hidden state on a visibility button.
-   * SVG elements are not HTMLElements, so `svg.hidden` is a no-op expando —
-   * the class + attribute pair below is what actually paints the right glyph.
-   */
+  function hideFlash() {
+    var box = document.querySelector("[data-flash]");
+    if (box) {
+      box.hidden = true;
+      var text = box.querySelector("[data-flash-text]");
+      if (text) text.textContent = "";
+    }
+  }
+
+  function hideSuccess() {
+    var box = document.querySelector("[data-success]");
+    if (box) box.hidden = true;
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* Password visibility                                                */
+  /* ------------------------------------------------------------------ */
   function setRevealState(button, reveal) {
     if (!button) return;
     button.classList.toggle("is-revealed", Boolean(reveal));
     button.setAttribute("aria-pressed", reveal ? "true" : "false");
     button.setAttribute("aria-label", reveal ? "Hide password" : "Show password");
     button.title = reveal ? "Hide password" : "Show password";
-    var eye = button.querySelector(".icon-eye");
-    var eyeOff = button.querySelector(".icon-eye-off");
-    if (eye) {
-      if (reveal) eye.setAttribute("hidden", "hidden");
-      else eye.removeAttribute("hidden");
-    }
-    if (eyeOff) {
-      if (reveal) eyeOff.removeAttribute("hidden");
-      else eyeOff.setAttribute("hidden", "hidden");
-    }
   }
 
   function bindVisibility(button, input) {
@@ -96,17 +103,15 @@
       setRevealState(button, reveal);
       input.focus({ preventScroll: true });
       var end = input.value.length;
-      try { input.setSelectionRange(end, end); } catch (error) { /* type=email */ }
+      try { input.setSelectionRange(end, end); } catch (error) { /* not a text input */ }
     });
   }
 
   function bindCapsLock(input, hint) {
     if (!input || !hint) return;
     function update(event) {
-      var on = false;
-      if (event && typeof event.getModifierState === "function") {
-        on = event.getModifierState("CapsLock");
-      }
+      var on = typeof event.getModifierState === "function" &&
+        event.getModifierState("CapsLock");
       hint.hidden = !on;
     }
     input.addEventListener("keydown", update);
@@ -163,14 +168,49 @@
       }
     });
 
-    return { open: open, close: close, element: modal, isOpen: function () { return !modal.hidden; } };
+    return { open: open, close: close, element: modal };
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* Submit helper                                                      */
+  /* ------------------------------------------------------------------ */
+  function postJson(url, formData, csrfToken) {
+    return fetch(url, {
+      method: "POST",
+      headers: {
+        "Accept": "application/json",
+        "X-Requested-With": "fetch",
+        "X-CSRF-Token": csrfToken || ""
+      },
+      body: formData,
+      credentials: "same-origin"
+    }).then(function (response) {
+      return response
+        .json()
+        .catch(function () { return { message: "Unexpected response from the server." }; })
+        .then(function (data) { return { status: response.status, data: data }; });
+    });
+  }
+
+  function setLoading(button, state, busyLabel) {
+    if (!button) return;
+    button.disabled = state;
+    button.classList.toggle("is-loading", state);
+    var label = button.querySelector(".btn__label");
+    if (!label) return;
+    if (state) {
+      if (!label.dataset.idle) label.dataset.idle = label.textContent;
+      if (busyLabel) label.textContent = busyLabel;
+    } else if (label.dataset.idle) {
+      label.textContent = label.dataset.idle;
+    }
   }
 
   /* ------------------------------------------------------------------ */
   /* Boot                                                               */
   /* ------------------------------------------------------------------ */
   function init() {
-    var form = $("loginForm") || $("signupForm");
+    var form = $("authForm");
     if (!form) return;
 
     var mode = form.dataset.mode || "login";
@@ -178,185 +218,61 @@
     var nameInput = $("name");
     var passwordInput = $("password");
     var confirmInput = $("confirm_password");
-    var passwordError = $("passwordError");
-    var confirmError = $("confirmError");
-    var rulesList = $("passwordRules");
-    var meter = $("strengthMeter");
-    var meterLabel = $("strengthLabel");
-    var capsHint = $("capsLock");
     var submitBtn = $("submitBtn");
-    var emailTimer = null;
+    var tokenField = form.querySelector("input[name=csrf_token]");
+    var fieldMap = {
+      email: emailInput,
+      name: nameInput,
+      password: passwordInput,
+      confirm_password: confirmInput
+    };
 
-    /* ---- rules + meter ---- */
-    function renderRules(result) {
-      if (!rulesList) return;
-      Array.prototype.forEach.call(rulesList.querySelectorAll("[data-rule]"), function (item) {
-        var key = item.getAttribute("data-rule");
-        var met = Boolean(result.checks[key]);
-        item.classList.toggle("is-met", met);
-        item.classList.toggle("is-unmet", !met);
-        item.setAttribute("aria-checked", met ? "true" : "false");
-      });
-    }
-
-    function renderMeter(value, result) {
-      if (!meter || !meterLabel) return;
-      if (!value) {
-        meter.hidden = true;
-        return;
-      }
-      meter.hidden = false;
-      meter.setAttribute("data-strength", result.strength);
-      var labels = { weak: "Weak", fair: "Fair", good: "Good", strong: "Strong" };
-      meterLabel.textContent = labels[result.strength] || "Weak";
-    }
-
-    function context() {
-      return {
-        email: emailInput ? emailInput.value : "",
-        name: nameInput ? nameInput.value : ""
-      };
-    }
-
-    function validatePassword(options) {
-      if (!passwordInput) return { valid: true, result: null };
-      var opts = options || {};
-      var value = passwordInput.value;
-      var result = policy.evaluate(value, context());
-      renderRules(result);
-      renderMeter(value, result);
-
-      if (opts.showErrors) {
-        if (!value) {
-          setFieldError(passwordInput, "Enter your password.");
-        } else if (!result.valid) {
-          setFieldError(passwordInput, result.violations[0] || "Password does not meet the policy.");
-        } else {
-          setFieldError(passwordInput, "");
-        }
-      } else if (result.valid) {
-        setFieldError(passwordInput, "");
-      }
-      if (passwordError && !opts.showErrors && !value) passwordError.textContent = "";
-      setFieldValid(passwordInput, Boolean(value) && result.valid);
-      return { valid: result.valid, result: result };
-    }
-
-    if (passwordInput) {
-      passwordInput.addEventListener("input", function () {
-        validatePassword({ showErrors: false });
-        if (confirmInput && confirmInput.value) validateConfirm(false);
-      });
-      passwordInput.addEventListener("blur", function () {
-        if (passwordInput.value) validatePassword({ showErrors: true });
-      });
-      validatePassword({ showErrors: false });
-      var savedError = passwordError ? passwordError.getAttribute("data-error") : "";
-      if (savedError) setFieldError(passwordInput, savedError);
-    }
-
-    /* ---- confirm password ---- */
-    function validateConfirm(showErrors) {
-      if (!confirmInput) return true;
-      var match = confirmInput.value.length > 0 && confirmInput.value === passwordInput.value;
-      var hint = $("confirmHint");
-      if (hint) hint.hidden = !match;
-      setFieldValid(confirmInput, match);
-      if (showErrors) {
-        if (!confirmInput.value) setFieldError(confirmInput, "Re-enter your password.");
-        else if (!match) setFieldError(confirmInput, "Passwords do not match.");
-        else setFieldError(confirmInput, "");
-      } else if (match) {
-        setFieldError(confirmInput, "");
-      }
-      return match;
-    }
-
-    if (confirmInput) {
-      confirmInput.addEventListener("input", function () { validateConfirm(false); });
-      confirmInput.addEventListener("blur", function () {
-        if (confirmInput.value || passwordInput.value) validateConfirm(true);
-      });
-      var confirmSaved = confirmError ? confirmError.textContent.trim() : "";
-      if (confirmSaved) setFieldError(confirmInput, confirmSaved);
-    }
-
-    /* ---- e-mail ---- */
-    var EMAIL_RE = /^[A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,}$/;
-
-    function validateEmail(showErrors) {
-      if (!emailInput) return true;
-      var value = emailInput.value.trim();
-      var message = "";
-      if (!value) message = "Enter your e-mail address.";
-      else if (!EMAIL_RE.test(value)) message = "Enter a valid e-mail address, e.g. name@company.com.";
-      if (showErrors) setFieldError(emailInput, message);
-      else if (!message) setFieldError(emailInput, "");
-      setFieldValid(emailInput, Boolean(value) && !message);
-      return !message;
-    }
-
-    if (emailInput) {
-      emailInput.addEventListener("input", function () {
-        if (emailTimer) window.clearTimeout(emailTimer);
-        var clear = $("clearEmail");
-        if (clear) clear.hidden = emailInput.value.length === 0;
-        emailTimer = window.setTimeout(function () { validateEmail(false); }, 320);
-        if (fieldOf(emailInput) && fieldOf(emailInput).classList.contains("is-invalid")) validateEmail(false);
-      });
-      emailInput.addEventListener("blur", function () { validateEmail(true); });
-      var emailError = $("emailError");
-      var serverEmailError = emailError ? emailError.textContent.trim() : "";
-      if (serverEmailError) setFieldError(emailInput, serverEmailError);
-
-      var clearBtn = $("clearEmail");
-      if (clearBtn) {
-        clearBtn.hidden = emailInput.value.length === 0;
-        clearBtn.addEventListener("click", function () {
-          emailInput.value = "";
-          clearBtn.hidden = true;
-          emailInput.focus();
-          setFieldError(emailInput, "");
-        });
-      }
-    }
-
-    if (nameInput) {
-      nameInput.addEventListener("input", function () {
-        if (nameInput.value.trim().length >= 2) setFieldError(nameInput, "");
-        if (passwordInput && passwordInput.value) validatePassword({ showErrors: false });
-      });
-    }
-
-    /* ---- password visibility + caps lock ---- */
+    /* --- password visibility + caps lock --------------------------- */
     bindVisibility($("togglePassword"), passwordInput);
     bindVisibility($("toggleConfirm"), confirmInput);
-    bindCapsLock(passwordInput, capsHint);
+    bindCapsLock(passwordInput, $("capsLock"));
 
-    /* ---- policy dialog ---- */
+    /* --- clear e-mail ---------------------------------------------- */
+    var clearBtn = $("clearEmail");
+    if (clearBtn && emailInput) {
+      clearBtn.hidden = emailInput.value.length === 0;
+      clearBtn.addEventListener("click", function () {
+        emailInput.value = "";
+        clearBtn.hidden = true;
+        clearFieldError(emailInput);
+        emailInput.focus();
+      });
+      emailInput.addEventListener("input", function () {
+        clearBtn.hidden = emailInput.value.length === 0;
+      });
+    }
+
+    /* --- policy dialog --------------------------------------------- */
     var policyModal = createModal($("policyModal"));
     var policyBtn = $("policyInfoBtn");
     if (policyModal && policyBtn) {
       policyBtn.addEventListener("click", function () { policyModal.open(); });
       Array.prototype.forEach.call(
         document.querySelectorAll("[data-close-policy]"),
-        function (node) { node.addEventListener("click", function () { policyModal.close(); }); }
+        function (node) {
+          node.addEventListener("click", function () { policyModal.close(); });
+        }
       );
     }
 
-    function fillStrongPassword() {
-      var generated = policy.generate({ length: 16 });
-      if (passwordInput) {
-        passwordInput.value = generated;
-        passwordInput.type = "text";
-        setRevealState($("togglePassword"), true);
-        if (confirmInput) confirmInput.value = generated;
-        validatePassword({ showErrors: false });
-        validateConfirm(false);
-        passwordInput.focus({ preventScroll: true });
-        var end = generated.length;
-        try { passwordInput.setSelectionRange(end, end); } catch (error) { /* noop */ }
-      }
+    function suggestPassword() {
+      if (!window.AlphaPassword || !passwordInput) return null;
+      var generated = window.AlphaPassword.generate(16);
+      passwordInput.value = generated;
+      // Reveal it so the person can note it down before submitting.
+      passwordInput.type = "text";
+      setRevealState($("togglePassword"), true);
+      if (confirmInput) confirmInput.value = generated;
+      clearFieldError(passwordInput);
+      if (confirmInput) clearFieldError(confirmInput);
+      passwordInput.focus({ preventScroll: true });
+      try { passwordInput.setSelectionRange(generated.length, generated.length); } catch (error) { /* noop */ }
+      return generated;
     }
 
     Array.prototype.forEach.call(
@@ -364,244 +280,152 @@
       function (node) {
         node.addEventListener("click", function () {
           if (policyModal) policyModal.close();
-          fillStrongPassword();
+          suggestPassword();
         });
       }
     );
 
-    /* ---- demo credentials ---- */
-    var demoBtn = $("fillDemo");
-    if (demoBtn) {
-      demoBtn.addEventListener("click", function () {
-        demoBtn.dataset.email = demoBtn.dataset.email || "";
-        var card = demoBtn.closest(".demo-card");
-        var codes = card ? card.querySelectorAll("code") : [];
-        if (emailInput && codes[0]) emailInput.value = codes[0].textContent.trim();
-        if (passwordInput && codes[1]) {
-          passwordInput.value = codes[1].textContent.trim();
-          passwordInput.dispatchEvent(new Event("input", { bubbles: true }));
-        }
-        validateEmail(false);
-        validatePassword({ showErrors: false });
-        hideAlert();
-        if (passwordInput) passwordInput.focus();
-      });
-    }
-
-    /* ---- forgot password ---- */
-    var forgotModal = $("forgotModal");
-    var forgotCtl = createModal(forgotModal);
+    /* --- forgot password ------------------------------------------- */
+    var forgotModalEl = $("forgotModal");
+    var forgotModal = createModal(forgotModalEl);
     var forgotBtn = $("forgotBtn");
-
-    if (forgotBtn) {
+    if (forgotBtn && forgotModal) {
       forgotBtn.addEventListener("click", function () {
-        var enabled = forgotModal && forgotModal.dataset.resetEnabled === "true";
-        if (!enabled) {
-          showAlert(
-            "Password reset is not configured in this environment. Add Supabase keys to enable e-mail reset, or contact IT support.",
-            "notice"
-          );
-          return;
-        }
         var target = $("forgotEmail");
+        var status = $("forgotStatus");
+        if (status) status.hidden = true;
         if (target) {
-          if (emailInput && EMAIL_RE.test(emailInput.value.trim())) target.value = emailInput.value.trim();
-          var error = $("forgotEmailError");
-          if (error) error.textContent = "";
-          var status = $("forgotStatus");
-          if (status) status.hidden = true;
+          if (emailInput && emailInput.value.trim()) target.value = emailInput.value.trim();
+          clearFieldError(target);
         }
-        if (forgotCtl) forgotCtl.open();
+        forgotModal.open();
       });
     }
 
     Array.prototype.forEach.call(
       document.querySelectorAll("[data-close-forgot]"),
-      function (node) { node.addEventListener("click", function () { if (forgotCtl) forgotCtl.close(); }); }
+      function (node) {
+        node.addEventListener("click", function () { if (forgotModal) forgotModal.close(); });
+      }
     );
 
     var forgotForm = $("forgotForm");
     if (forgotForm) {
       forgotForm.addEventListener("submit", function (event) {
         event.preventDefault();
-        var email = $("forgotEmail");
-        var error = $("forgotEmailError");
+        var emailField = $("forgotEmail");
+        var errorBox = $("forgotEmailError");
         var status = $("forgotStatus");
         var button = $("forgotSubmit");
-        var value = email ? email.value.trim() : "";
+        var token = forgotForm.querySelector("input[name=csrf_token]");
 
-        if (!value || !EMAIL_RE.test(value)) {
-          if (error) error.textContent = "Enter a valid e-mail address.";
-          if (email) email.focus();
-          return;
-        }
-        if (error) error.textContent = "";
-        if (button) { button.disabled = true; button.classList.add("is-loading"); }
+        setLoading(button, true, "Sending…");
+        if (errorBox) errorBox.textContent = "";
+        if (status) status.hidden = true;
 
-        fetch(forgotForm.getAttribute("action"), {
-          method: "POST",
-          headers: {
-            "Accept": "application/json",
-            "X-Requested-With": "fetch",
-            "X-CSRF-Token": forgotForm.querySelector("input[name=csrf_token]").value
-          },
-          body: new FormData(forgotForm),
-          credentials: "same-origin"
-        })
-          .then(function (response) {
-            return response.json().catch(function () { return {}; }).then(function (data) {
-              return { status: response.status, data: data };
-            });
-          })
+        postJson(
+          forgotForm.getAttribute("action"),
+          new FormData(forgotForm),
+          token ? token.value : ""
+        )
           .then(function (result) {
-            if (button) { button.disabled = false; button.classList.remove("is-loading"); }
-            if (result.data && result.data.ok) {
+            setLoading(button, false);
+            var data = result.data || {};
+            if (data.ok) {
               if (status) {
-                status.textContent = result.data.message || "If an account exists, a reset link is on its way.";
+                status.textContent = data.message || "If an account exists, a reset link is on its way.";
                 status.hidden = false;
               }
-              if (email) email.value = "";
-            } else if (error) {
-              error.textContent = (result.data && result.data.message) || "Could not send the reset link. Try again.";
+              if (emailField) emailField.value = "";
+              return;
+            }
+            var message = data.message || "Could not send the reset link. Please try again.";
+            if (errorBox && (data.errors && data.errors.email || !data.errors)) {
+              if (errorBox) errorBox.textContent = message;
+            }
+            if (data.code === "rate_limited" && status) {
+              status.textContent = message;
+              status.hidden = false;
             }
           })
           .catch(function () {
-            if (button) { button.disabled = false; button.classList.remove("is-loading"); }
-            if (error) error.textContent = "Network error. Please check your connection and try again.";
+            setLoading(button, false);
+            if (errorBox) errorBox.textContent = "Network error. Please check your connection.";
           });
       });
     }
 
-    /* ---- submit ---- */
-    var enhanced = true;
-    form.dataset.enhanced = "true";
-
-    function setLoading(state) {
-      if (!submitBtn) return;
-      submitBtn.disabled = state;
-      submitBtn.classList.toggle("is-loading", state);
-      var label = submitBtn.querySelector(".btn__label");
-      if (label) {
-        if (state) {
-          label.dataset.idle = label.textContent;
-          label.textContent = mode === "signup" ? "Creating account…" : "Signing in…";
-        } else if (label.dataset.idle) {
-          label.textContent = label.dataset.idle;
-        }
-      }
-    }
-
-    function firstInvalidField() {
-      var invalid = form.querySelector(".field.is-invalid .control__input");
-      return invalid || null;
-    }
-
+    /* --- main submit ----------------------------------------------- */
     form.addEventListener("submit", function (event) {
-      if (!enhanced) return;
       event.preventDefault();
-      hideAlert();
+      hideFlash();
+      hideSuccess();
+      var busy = mode === "signup" ? "Creating account…" : "Signing in…";
+      setLoading(submitBtn, true, busy);
 
-      var ok = true;
-      if (nameInput && mode === "signup") {
-        var nameValue = nameInput.value.trim();
-        if (nameValue.length < 2) {
-          setFieldError(nameInput, "Enter your full name (at least 2 characters).");
-          ok = false;
-        } else if (nameValue.length > 80) {
-          setFieldError(nameInput, "That name is too long (80 characters maximum).");
-          ok = false;
-        } else {
-          setFieldError(nameInput, "");
-        }
-      }
-      if (!validateEmail(true)) ok = false;
-      var passwordState = validatePassword({ showErrors: true });
-      if (!passwordState.valid) ok = false;
-      if (confirmInput && !validateConfirm(true)) ok = false;
+      postJson(
+        form.getAttribute("action"),
+        new FormData(form),
+        tokenField ? tokenField.value : ""
+      )
+        .then(function (result) {
+          var data = result.data || {};
 
-      if (!ok) {
-        var first = firstInvalidField();
-        if (first) first.focus({ preventScroll: false });
-        return;
-      }
-
-      if (passwordError) passwordError.textContent = "";
-      setLoading(true);
-
-      var headers = { "Accept": "application/json", "X-Requested-With": "fetch" };
-      var tokenField = form.querySelector("input[name=csrf_token]");
-      if (tokenField) headers["X-CSRF-Token"] = tokenField.value;
-
-      fetch(form.getAttribute("action"), {
-        method: "POST",
-        headers: headers,
-        body: new FormData(form),
-        credentials: "same-origin"
-      })
-        .then(function (response) {
-          return response
-            .json()
-            .catch(function () { return { message: "Unexpected server response." }; })
-            .then(function (data) { return { status: response.status, data: data }; });
-        })
-        .then(function (outcome) {
-          var data = outcome.data || {};
-          if (data.ok) {
-            setLoading(false);
-            showSuccess(data.message || "Success. Redirecting…");
-            if (passwordInput) passwordInput.blur();
-            var target = data.redirect || null;
+          // Signup with "confirm e-mail" enabled: no session yet.
+          if (data.ok && data.code === "confirm_email") {
+            setLoading(submitBtn, false);
+            showFlash(data.message || "Check your inbox to confirm your e-mail.", "notice");
             window.setTimeout(function () {
-              window.location.assign(target || "/dashboard");
-            }, 650);
+              window.location.assign(data.redirect || "/login");
+            }, 1600);
             return;
           }
 
-          setLoading(false);
-          if (data.code === "csrf" && data.csrfToken) {
-            // The session cookie was rotated/expired: re-sync the token so the
-            // user can simply press the button again instead of losing input.
-            var stale = form.querySelector("input[name=csrf_token]");
-            if (stale) stale.value = data.csrfToken;
+          if (data.ok) {
+            setLoading(submitBtn, false);
+            showFlash(data.message || "Success. Redirecting…", "success");
+            if (passwordInput) passwordInput.blur();
+            window.setTimeout(function () {
+              window.location.assign(data.redirect || "/dashboard");
+            }, 550);
+            return;
           }
-          var message = data.message || "Sign-in failed. Please try again.";
-          if (data.attemptsRemaining === 0) {
-            message = "Too many failed attempts. This account is temporarily locked — try again shortly.";
-          }
-          showAlert(message, "error");
 
-          if (data.errors && typeof data.errors === "object") {
-            Object.keys(data.errors).forEach(function (key) {
-              var map = {
-                email: emailInput,
-                name: nameInput,
-                password: passwordInput,
-                confirm_password: confirmInput
-              };
-              var input = map[key];
-              if (input) setFieldError(input, data.errors[key]);
-            });
+          setLoading(submitBtn, false);
+
+          // A rotated CSRF token is handed back so a retry just works.
+          if (data.code === "csrf" && data.csrfToken && tokenField) {
+            tokenField.value = data.csrfToken;
           }
-          if (data.field) {
-            var mapAll = {
-              email: emailInput,
-              name: nameInput,
-              password: passwordInput,
-              confirm_password: confirmInput
-            };
-            var targetInput = mapAll[data.field];
-            if (targetInput) targetInput.focus({ preventScroll: false });
-          }
+
+          // Paint the backend's field-level verdicts.
+          var errors = data.errors || {};
+          var focused = false;
+          Object.keys(errors).forEach(function (key) {
+            var input = fieldMap[key];
+            if (input) {
+              setFieldError(input, errors[key]);
+              if (!focused) {
+                input.focus({ preventScroll: true });
+                focused = true;
+              }
+            }
+          });
+
+          showFlash(data.message || "Please check the details and try again.", "error");
         })
         .catch(function () {
-          setLoading(false);
-          showAlert("Network error. Please check your connection and try again.", "error");
+          setLoading(submitBtn, false);
+          showFlash("Network error. Please check your connection and try again.", "error");
         });
     });
 
-    /* Clear the alert as soon as the user starts correcting things. */
+    /* Typing clears the last verdict for that field (no validation here). */
     form.addEventListener("input", function (event) {
-      if (event.target && event.target.matches("input")) hideAlert();
+      var target = event.target;
+      if (!target || !target.matches("input")) return;
+      hideFlash();
+      if (fieldMap[target.name] || fieldOf(target)) clearFieldError(target);
     });
   }
 

@@ -3,22 +3,31 @@
 {% block body_class %}page page--auth{% endblock %}
 
 {% block content %}
-<div class="backdrop" aria-hidden="true">
-  <span class="backdrop__orb backdrop__orb--gold"></span>
-  <span class="backdrop__orb backdrop__orb--ember"></span>
-  <span class="backdrop__grid"></span>
+<div class="scene" aria-hidden="true">
+  <img class="scene__photo" src="{{ url_for('static', filename='img/hero-bg.jpg') }}" alt="">
+  <div class="scene__wash"></div>
+  <div class="scene__vignette"></div>
 </div>
 
-<main class="shell shell--narrow">
-  <section class="card card--single">
-    <div class="panel panel--center">
-      <img class="panel__logo panel__logo--center" src="{{ url_for('static', filename='img/alpha-logo.png') }}"
-           alt="{{ app_name }}" width="1997" height="787">
-      <p class="error-code">{{ code }}</p>
-      <h1>{{ message }}</h1>
-      <p class="panel__sub">If this keeps happening, contact the Alpha Group IT desk.</p>
-      <a class="btn btn--primary" href="{{ url_for('auth.login') }}">Back to sign in</a>
-    </div>
+<header class="masthead">
+  <a class="masthead__brand" href="{{ url_for('auth.login') }}">
+    <img src="{{ url_for('static', filename='img/alpha-logo-light.png') }}"
+         alt="{{ app_name }} — {{ tagline }}" width="1997" height="787">
+  </a>
+</header>
+
+<main class="error-page">
+  <section class="error-card">
+    <p class="error-code">{{ code }}</p>
+    <h1>{{ message }}</h1>
+    <p>If this keeps happening, contact the Alpha Group IT desk.</p>
+    <a class="btn btn--primary btn--sm" href="{{ url_for('auth.login') }}">Back to sign in</a>
   </section>
 </main>
+
+<footer class="page-footer">
+  <span>© {{ year }} {{ app_name }}</span>
+  <span class="page-footer__sep" aria-hidden="true">•</span>
+  <span>{{ tagline }}</span>
+</footer>
 {% endblock %}

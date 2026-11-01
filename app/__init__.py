@@ -85,13 +85,11 @@ def create_app(config_object: Any | None = None) -> Flask:
             "error": "",
             "notice": "",
             "form": {},
-            "policy_result": None,
             "next_url": "/dashboard",
-            "demo_mode": False,
-            "demo_email": "",
-            "demo_password": "",
-            "demo_name": "",
+            "page_mode": "",
+            "supports_signup": app.extensions["auth_backend"].supports_signup,
             "supports_reset": app.extensions["auth_backend"].supports_password_reset,
+            "provider_name": "Supabase",
         }
 
     @app.after_request

@@ -1,9 +1,7 @@
-"""Pluggable authentication backends.
+"""Authentication backends.
 
-``SupabaseAuthBackend`` is the production path.  ``DemoAuthBackend`` keeps the
-login page fully usable (and testable) when no Supabase project is configured.
-Both expose exactly the same tiny interface so the routes never care which one
-is active.
+``SupabaseAuthBackend`` is the only backend: every credential check, policy
+decision and session is made by the backend, never by the browser.
 """
 
 from __future__ import annotations
@@ -55,7 +53,7 @@ class AuthOutcome:
 
 
 class BaseAuthBackend:
-    """Interface implemented by every backend."""
+    """Interface implemented by the backend."""
 
     name = "base"
     supports_signup = True
@@ -81,15 +79,15 @@ class BaseAuthBackend:
         )
 
 
-from .demo_backend import DemoAuthBackend  # noqa: E402  (circular-safe import)
 from .supabase_backend import SupabaseAuthBackend  # noqa: E402
 
 
 def build_backend(config) -> BaseAuthBackend:
-    """Return the Supabase backend when configured, otherwise demo mode.
+    """Build the Supabase backend from configuration.
 
-    ``config`` may be a Flask ``Config`` mapping or a plain config class, so
-    every value is read defensively.
+    There is deliberately no offline/fallback mode: if the project is not
+    configured the application refuses to start instead of quietly validating
+    credentials anywhere other than Supabase.
     """
     def get(key, default=None):
         try:
@@ -98,17 +96,18 @@ def build_backend(config) -> BaseAuthBackend:
             value = getattr(config, key, default)
         return default if value is None else value
 
-    if get("FORCE_DEMO", False):
-        return DemoAuthBackend(get("DEMO_STORE"))
     url = str(get("SUPABASE_URL", "") or "").strip()
     anon_key = str(get("SUPABASE_ANON_KEY", "") or "").strip()
-    if url and anon_key:
-        return SupabaseAuthBackend(
-            url,
-            anon_key,
-            reset_redirect_url=str(get("SUPABASE_RESET_REDIRECT_URL", "") or ""),
+    if not url or not anon_key:
+        raise RuntimeError(
+            "Supabase is not configured: set SUPABASE_URL and SUPABASE_ANON_KEY "
+            "(see .env.example). Refusing to start without a real auth backend."
         )
-    return DemoAuthBackend(get("DEMO_STORE"))
+    return SupabaseAuthBackend(
+        url,
+        anon_key,
+        reset_redirect_url=str(get("SUPABASE_RESET_REDIRECT_URL", "") or ""),
+    )
 
 
 __all__ = [
@@ -116,7 +115,6 @@ __all__ = [
     "AuthOutcome",
     "AuthSession",
     "BaseAuthBackend",
-    "DemoAuthBackend",
     "SupabaseAuthBackend",
     "build_backend",
 ]

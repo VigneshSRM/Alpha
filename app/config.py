@@ -34,38 +34,32 @@ _load_dotenv()
 
 class Config:
     # --- Flask -----------------------------------------------------------
-    # A random ephemeral key keeps local previews working; production MUST set
+    # A random ephemeral key keeps local runs working; production MUST set
     # SECRET_KEY so that sessions survive restarts / multiple workers.
     SECRET_KEY = os.getenv("SECRET_KEY") or os.urandom(32).hex()
     SESSION_COOKIE_NAME = "alpha_session"
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = "Lax"
     SESSION_COOKIE_SECURE = _env_bool("SESSION_COOKIE_SECURE", False)
-    PERMANENT_SESSION_LIFETIME = timedelta(hours=8)
+    PERMANENT_SESSION_LIFETIME = timedelta(days=7)
     MAX_CONTENT_LENGTH = 64 * 1024  # tiny forms only
 
     # --- Supabase --------------------------------------------------------
     SUPABASE_URL = (os.getenv("SUPABASE_URL") or "").strip().rstrip("/")
     SUPABASE_ANON_KEY = (os.getenv("SUPABASE_ANON_KEY") or "").strip()
-    # Redirect target used by the "forgot password" email flow.
+    # Redirect target used by the "forgot password" e-mail flow.
     SUPABASE_RESET_REDIRECT_URL = (
         os.getenv("SUPABASE_RESET_REDIRECT_URL") or "http://localhost:5000/login"
     )
 
     # --- Auth behaviour ---------------------------------------------------
-    # Set FORCE_DEMO=1 to test the UI without any Supabase credentials.
-    FORCE_DEMO = _env_bool("FORCE_DEMO", False)
     # Failed sign-in attempts allowed per window, per IP + per email.
     LOGIN_MAX_ATTEMPTS = int(os.getenv("LOGIN_MAX_ATTEMPTS", "5"))
     LOGIN_WINDOW_SECONDS = int(os.getenv("LOGIN_WINDOW_SECONDS", "900"))
     # Refresh the Supabase access token this many seconds before it expires.
     TOKEN_REFRESH_SKEW = int(os.getenv("TOKEN_REFRESH_SKEW", "120"))
+    # Session lifetime for "keep me signed in" (days).
     REMEMBER_DAYS = int(os.getenv("REMEMBER_DAYS", "7"))
-
-    # --- Paths ------------------------------------------------------------
-    DEMO_STORE = Path(
-        os.getenv("DEMO_STORE", str(BASE_DIR / ".data" / "demo_users.json"))
-    )
 
 
 class DevelopmentConfig(Config):
