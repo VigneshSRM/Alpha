@@ -1,0 +1,25 @@
+# Tests run against in-memory H2 in MySQL compatibility mode, so the same
+# Flyway migrations and the same SQL apply without needing a live database.
+spring:
+  datasource:
+    url: jdbc:h2:mem:portal;MODE=MySQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1
+    username: sa
+    password: ""
+    driver-class-name: org.h2.Driver
+  jpa:
+    hibernate:
+      ddl-auto: none
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+  session:
+    jdbc:
+      initialize-schema: never
+
+alpha:
+  security:
+    remember-me-key: test-remember-me-key-0123456789
+    bcrypt-strength: 4          # keep the suite fast
+    login-max-attempts: 5
+    login-window-seconds: 60
+  log-reset-links: true

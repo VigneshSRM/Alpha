@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments :: head(${pageTitle})}"></head>
+
+<body class="page page--auth">
+
+<th:block th:replace="~{fragments :: scene}"></th:block>
+
+<main class="stage">
+  <div class="stage__col">
+    <section class="access error-card">
+      <a class="access__brand" th:href="@{/login}" th:attr="aria-label=${appName}">
+        <img th:src="@{/img/alpha-logo-light.png(v=${assetV})}" th:alt="${appName}"
+             width="1200" height="472">
+      </a>
+      <p class="error-code" th:text="${status}">404</p>
+      <h1 th:text="${message}">We could not find that page.</h1>
+      <p class="access__sub">If this keeps happening, contact the Alpha Group IT desk.</p>
+      <a class="btn btn--primary" th:href="@{/login}">Back to sign in</a>
+    </section>
+  </div>
+</main>
+
+<th:block th:replace="~{fragments :: footer}"></th:block>
+
+</body>
+</html>

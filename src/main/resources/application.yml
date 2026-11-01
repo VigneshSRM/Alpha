@@ -1,0 +1,76 @@
+server:
+  port: ${PORT:8080}
+  forward-headers-strategy: framework
+  servlet:
+    session:
+      timeout: 30m
+      cookie:
+        http-only: true
+        same-site: lax
+        secure: ${SESSION_COOKIE_SECURE:false}
+  error:
+    whitelabel:
+      enabled: false
+
+spring:
+  application:
+    name: Alpha Group Portal
+
+  datasource:
+    url: ${DB_URL:jdbc:mariadb://localhost:3306/alpha_portal}
+    username: ${DB_USERNAME:alpha}
+    password: ${DB_PASSWORD:alpha}
+    driver-class-name: org.mariadb.jdbc.Driver
+    hikari:
+      maximum-pool-size: ${DB_POOL_SIZE:10}
+      connection-timeout: 5000
+
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: none          # Flyway owns the schema
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+
+  session:
+    jdbc:
+      initialize-schema: never   # tables come from Flyway (V2)
+      table-name: SPRING_SESSION
+    timeout: 30m
+
+  thymeleaf:
+    cache: ${THYMELEAF_CACHE:false}
+
+  web:
+    resources:
+      cache:
+        cachecontrol:
+          no-cache: true
+
+alpha:
+  app-name: ${APP_NAME:Alpha Group of India}
+  provider-name: Spring Security
+  support-email: ${SUPPORT_EMAIL:help@alphagroup.in}
+
+  security:
+    # Signs the remember-me cookie. MUST be set to a long random value in prod.
+    remember-me-key: ${SECRET_KEY:change-me-in-production-please-use-64-random-chars}
+    remember-me-days: 14
+    login-max-attempts: ${LOGIN_MAX_ATTEMPTS:5}
+    login-window-seconds: ${LOGIN_WINDOW_SECONDS:900}
+    bcrypt-strength: ${BCRYPT_STRENGTH:12}
+    reset-token-minutes: 60
+
+  signup:
+    enabled: ${SIGNUP_ENABLED:true}
+
+logging:
+  level:
+    in.alphagroup.portal: INFO

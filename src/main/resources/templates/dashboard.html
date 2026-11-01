@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments :: head('Dashboard · ' + ${appName})}"></head>
+
+<body class="page page--app" th:attr="data-policy=${policyJson}">
+
+<th:block th:replace="~{fragments :: scene}"></th:block>
+
+<header class="topbar">
+  <a class="topbar__brand" th:href="@{/dashboard}">
+    <img th:src="@{/img/alpha-logo-light.png(v=${assetV})}"
+         th:alt="${appName}" width="1200" height="472">
+  </a>
+  <div class="topbar__right">
+    <span class="topbar__user">
+      <span class="avatar" aria-hidden="true"
+            th:text="${#strings.toUpperCase(#strings.substring(account['name'], 0, 1))}">A</span>
+      <span class="topbar__email" th:text="${account['email']}">name@alphagroup.in</span>
+    </span>
+    <form method="post" action="/logout" class="topbar__logout">
+      <input type="hidden" name="csrf_token" th:value="${_csrf.token}">
+      <button class="btn btn--ghost btn--sm" type="submit">Sign out</button>
+    </form>
+  </div>
+</header>
+
+<main class="dash">
+  <section class="dash__hero">
+    <p class="intro__eyebrow">Secure session</p>
+    <h1>Welcome back, <span th:text="${account['name']}">there</span></h1>
+    <p class="dash__lead">
+      You are signed in through <strong th:text="${sessionInfo['backend']}">Spring Security</strong>.
+      This is the protected area — extend it with your own modules.
+    </p>
+  </section>
+
+  <section class="panel">
+    <h2 class="panel__title">Account</h2>
+    <dl class="kv">
+      <div><dt>Name</dt><dd th:text="${account['name']}">—</dd></div>
+      <div><dt>E-mail</dt><dd th:text="${account['email']}">—</dd></div>
+      <div><dt>User ID</dt><dd class="mono" th:text="${account['id']}">—</dd></div>
+      <div th:if="${account['joined'] != null and !account['joined'].isEmpty()}">
+        <dt>Member since</dt><dd th:text="${account['joined']}">—</dd>
+      </div>
+      <div th:if="${account['lastLogin'] != null and !account['lastLogin'].isEmpty()}">
+        <dt>Last sign-in</dt><dd th:text="${account['lastLogin']}">—</dd>
+      </div>
+    </dl>
+  </section>
+
+  <section class="panel">
+    <h2 class="panel__title">Session</h2>
+    <dl class="kv">
+      <div><dt>Provider</dt><dd th:text="${sessionInfo['backend']}">Spring Security</dd></div>
+      <div>
+        <dt>Session expires in</dt>
+        <dd><span id="sessionTimer" th:attr="data-expires=${sessionInfo['expires_at']}">—</span></dd>
+      </div>
+      <div>
+        <dt>Signed in</dt>
+        <dd><span th:attr="data-unixtime=${sessionInfo['logged_in_at']}">—</span></dd>
+      </div>
+    </dl>
+    <p class="panel__note">Sessions are stored in MariaDB and survive a redeploy.</p>
+  </section>
+
+  <section class="panel">
+    <h2 class="panel__title">Active password policy</h2>
+    <ul class="policy-chips">
+      <li th:text="${policy['minLength']} + '+ characters'">12+ characters</li>
+      <li th:text="${policy['minUppercase']} + ' uppercase'">1 uppercase</li>
+      <li th:text="${policy['minLowercase']} + ' lowercase'">1 lowercase</li>
+      <li th:text="${policy['minDigits']} + ' numbers'">2 numbers</li>
+      <li th:text="${policy['minSpecial']} + ' special characters'">2 special characters</li>
+      <li>No common patterns</li>
+    </ul>
+    <p class="panel__note">
+      Enforced server-side by <code>PasswordPolicy.java</code>, and stored as a BCrypt hash.
+    </p>
+  </section>
+</main>
+
+<th:block th:replace="~{fragments :: footer}"></th:block>
+
+<script th:src="@{/js/dashboard.js(v=${assetV})}" defer></script>
+</body>
+</html>

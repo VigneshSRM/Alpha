@@ -1,14 +1,13 @@
-# Python
-__pycache__/
-*.py[cod]
-.venv/
-venv/
+# Build output
+target/
+!.mvn/wrapper/maven-wrapper.jar
+
+# IDE
+.idea/
+*.iml
+.vscode/
+*.log
+
+# Secrets — never commit real database credentials
 .env
-
-# Local demo vault (never commit credentials/hashes)
-.data/
-
-# Tooling
-.pytest_cache/
-.ruff_cache/
-.DS_Store
+.env.local
