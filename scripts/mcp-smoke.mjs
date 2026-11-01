@@ -75,6 +75,13 @@ const refFor = (snapshot, name) => {
   throw new Error(`no control named "${name}" in the accessibility tree`);
 };
 
+const noStrayBanner = `() => {
+  const el = document.querySelector('[data-flash]');
+  if (!el) return 'absent';
+  const cs = getComputedStyle(el);
+  return cs.display === 'none' || el.getBoundingClientRect().height === 0 ? 'hidden' : 'VISIBLE';
+}`;
+
 const failures = [];
 const check = (label, condition, detail) => {
   const mark = condition ? 'PASS' : 'FAIL';
@@ -116,6 +123,8 @@ async function main() {
     await tool('browser_navigate', { url: `${BASE}/login` });
     let snap = await tool('browser_snapshot', {});
     check('sign-in page renders', snap.includes('"Welcome back"'));
+    check('no stray error banner above the e-mail field',
+      (await evaluate(noStrayBanner)) !== 'VISIBLE');
     check('password field has a clean accessible name',
       /textbox "Password"/.test(snap),
       (snap.match(/textbox "(Password[^"]*)"/) || [])[1]);
@@ -127,6 +136,8 @@ async function main() {
     });
     await tool('browser_wait_for', { text: 'Create your account' });
     check('lands on the request-account page', (await evaluate('() => location.pathname')) === '/signup');
+    check('no stray error banner above the e-mail field (sign-up)',
+      (await evaluate(noStrayBanner)) !== 'VISIBLE');
 
     /* 3. fill it in; the verdict must come from the server */
     snap = await tool('browser_snapshot', {});

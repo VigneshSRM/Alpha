@@ -36,8 +36,10 @@ Last run against this sandbox:
 
 ```
 [PASS] sign-in page renders
+[PASS] no stray error banner above the e-mail field
 [PASS] password field has a clean accessible name — Password
 [PASS] lands on the request-account page
+[PASS] no stray error banner above the e-mail field (sign-up)
 [PASS] weak password is rejected — unmet: length, special
 [PASS] strong password is accepted — 6/6 rules met
 [PASS] account page greets the user — Welcome back, Ava Menon
