@@ -124,7 +124,9 @@ ul { padding: 0; list-style: none; }
 /* Auth pages have no masthead, so the stage itself is the flexible row. */
 .page--auth {
   display: grid;
-  grid-template-rows: minmax(0, 1fr) auto;
+  /* One row: the panel is centred on the whole screen and the footer is pinned
+     to the bottom edge instead of stealing height from the centring box. */
+  grid-template-rows: minmax(0, 1fr);
   position: relative;
   isolation: isolate;
   min-height: 100vh;
@@ -193,6 +195,9 @@ ul { padding: 0; list-style: none; }
   grid-template-columns: minmax(0, 452px) minmax(0, 1fr);
   align-items: center;
   align-content: center;
+  /* `safe` keeps the top edge reachable if a very short window cannot fit the
+     panel; browsers that ignore it fall back to plain centring. */
+  align-content: safe center;
   justify-items: start;
   column-gap: clamp(24px, 6vw, 120px);
   padding: clamp(18px, 2.4vw, 34px) clamp(20px, 5vw, 72px) clamp(20px, 3vw, 40px);
@@ -208,8 +213,22 @@ ul { padding: 0; list-style: none; }
   align-content: center;
 }
 
-/* No masthead on the auth pages any more — the logo lives inside the panel. */
-.page--auth .stage { padding-top: clamp(24px, 5vh, 56px); }
+/* No masthead on the auth pages any more — the logo lives inside the panel.
+   Equal top and bottom padding keeps the panel optically centred. */
+.page--auth .stage { padding-block: clamp(20px, 3vw, 40px); }
+
+.page--auth .page-footer {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2;
+  /* Lined up with the panel's left edge so it reads as part of the layout. */
+  padding: 0 clamp(20px, 5vw, 72px) clamp(12px, 2vh, 20px);
+  font-size: 0.68rem;
+  letter-spacing: 0.02em;
+  color: var(--text-muted);
+}
 
 /* --------------------------------------------------------------------------
    Small shared pieces
@@ -1127,6 +1146,12 @@ code {
       linear-gradient(180deg, rgba(12, 5, 26, 0.9) 0%, rgba(14, 6, 30, 0.72) 40%,
         rgba(14, 6, 30, 0.55) 70%, rgba(10, 4, 22, 0.9) 100%);
   }
+}
+
+/* Tablet / short-desktop in one column: centre the panel when there is room,
+   but keep it anchored to the top when the viewport is too short to scroll it. */
+@media (max-width: 1024px) and (min-height: 780px) {
+  .stage { align-content: center; align-content: safe center; }
 }
 
 @media (max-width: 640px) {
