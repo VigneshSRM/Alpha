@@ -140,6 +140,58 @@ def _view_context() -> dict:
 
 
 # ---------------------------------------------------------------------------
+# Live password check (advisory, still decided by the server)
+# ---------------------------------------------------------------------------
+@bp.post("/api/password-check")
+def password_check():
+    """Evaluate a password against the policy while the user is typing.
+
+    The verdict comes from the same server-side evaluator used on submit, so the
+    indicator in the browser can never disagree with the eventual decision.
+    The password itself is never logged or stored.
+    """
+    data = _payload()
+    password = data.get("password") or ""
+    email = (data.get("email") or "").strip()
+    name = (data.get("name") or "").strip()
+
+    if len(password) > POLICY["maxLength"]:
+        return jsonify(
+            {
+                "ok": True,
+                "valid": False,
+                "empty": False,
+                "checks": {rule.key: False for rule in RULES},
+                "violations": [
+                    f"Password must be at most {POLICY['maxLength']} characters."
+                ],
+            }
+        )
+
+    if not password:
+        return jsonify(
+            {
+                "ok": True,
+                "valid": False,
+                "empty": True,
+                "checks": {rule.key: False for rule in RULES},
+                "violations": [],
+            }
+        )
+
+    result = evaluate(password, {"email": email, "name": name})
+    return jsonify(
+        {
+            "ok": True,
+            "valid": result.valid,
+            "empty": False,
+            "checks": result.checks,
+            "violations": result.violations,
+        }
+    )
+
+
+# ---------------------------------------------------------------------------
 # Pages
 # ---------------------------------------------------------------------------
 @bp.get("/")

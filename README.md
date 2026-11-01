@@ -37,9 +37,15 @@ background — with the form floating directly on it. No nested boxes, no market
   password validator any more. If Supabase is not configured the app **refuses to start** rather than
   validating anything locally.
 * **Validation is the backend's job.** `app/static/js/auth.js` only handles UX (visibility, caps-lock
-  hint, dialogs, spinner) and renders the verdict it receives. The removed
-  `password-policy.js` client validator is gone; the policy dialog is rendered from the server's
-  `POLICY` constant.
+  hint, popover, spinner) and renders the verdict it receives. There is no client-side policy engine;
+  the requirements list and the live tick both come from the server.
+* **Single-panel composition.** The logo sits inside the sign-in panel, there is no masthead, no
+  marketing copy and no footer tagline. The only nearby text is the compact requirement caption under
+  the password field.
+* **"!" password hint.** The old policy button/modal is gone. A small circular **!** beside the
+  Password label opens the requirement list on **hover** (or tap on touch), and it doubles as a live
+  indicator: it pulses amber while the server is checking, turns into a green tick when the password
+  passes, and stays red while it does not.
 
 ---
 
@@ -127,10 +133,12 @@ The same rules are applied when a password is **submitted on the sign-in form**,
 cannot possibly be valid never reaches the provider. `supabase/schema.sql` mirrors the length and
 character-class rules inside Supabase Auth as a third layer.
 
-The **Password policy** dialog is generated from the server's `POLICY`/`RULES` constants, so what the
-page explains can never drift from what the server enforces. Its "Suggest a strong password" button
-generates a value with `crypto.getRandomValues` (`app/static/js/password-generator.js`) — generation
-only; the server still validates it on submit.
+The **!** hint renders its list from the server's `POLICY`/`RULES` constants, so what the page explains
+can never drift from what the server enforces. While a password is being typed, the browser sends it to
+`POST /api/password-check` (never logged or stored) which runs the same `evaluate()` used on submit:
+each requirement ticks, the **!** turns into a green tick once every rule passes, and the sentence under
+the list shows the current blocker. Sign-up additionally offers *Suggest a strong password*
+(`crypto.getRandomValues`) — generation only; the server still validates on submit.
 
 ### 4.4 Session lifecycle
 
@@ -200,6 +208,7 @@ Alpha/
 | POST | `/logout` | Supabase sign-out + session clear |
 | POST | `/forgot-password` | sends a reset e-mail (always a generic response) |
 | GET | `/dashboard` | protected landing page |
+| POST | `/api/password-check` | live policy verdict for the "!" indicator (server-side) |
 | GET | `/session` | JSON session info |
 | GET | `/healthz` | backend/health probe |
 
@@ -240,7 +249,7 @@ python -m unittest discover -s tests -v
 
 * `tests/test_password_policy.py` — 14 cases covering each rule (length, upper, lower, digits,
   specials, dictionary words, sequences, repeats, personal data, max length, scoring).
-* `tests/test_routes.py` — 29 cases. The Supabase client is replaced by an in-memory double, so the
+* `tests/test_routes.py` — 33 cases. The Supabase client is replaced by an in-memory double, so the
   real routing, CSRF, throttle, policy, session and redirect code runs with no network. It asserts,
   among other things, that no demo affordances exist in the markup, that the backend is never called
   for malformed input, and that no account is created when the server rejects a password.

@@ -1,10 +1,10 @@
 /* ==========================================================================
    Alpha Group of India — portal interactions
 
-   IMPORTANT: this file performs NO validation. It only improves the feel of
-   the form (password visibility, caps-lock hint, dialogs, spinner) and then
-   renders whatever the backend decided. Every rule — e-mail shape, password
-   policy, credentials, duplicates — is judged server side.
+   IMPORTANT: this file performs NO validation of its own. It improves the feel
+   of the form (password visibility, caps-lock hint, spinner) and paints the
+   verdicts it is given. The "!" indicator asks the server (/api/password-check)
+   while you type, so the tick can never disagree with the submit decision.
    ========================================================================== */
 (function () {
   "use strict";
@@ -247,40 +247,180 @@
       });
     }
 
-    /* --- policy dialog --------------------------------------------- */
-    var policyModal = createModal($("policyModal"));
+    /* --- password requirements: "!" popover + live state ----------- */
     var policyBtn = $("policyInfoBtn");
-    if (policyModal && policyBtn) {
-      policyBtn.addEventListener("click", function () { policyModal.open(); });
-      Array.prototype.forEach.call(
-        document.querySelectorAll("[data-close-policy]"),
-        function (node) {
-          node.addEventListener("click", function () { policyModal.close(); });
+    var popover = $("policyPopover");
+    var popMessage = $("policyPopMessage");
+    var stateText = $("passwordState");
+    var checklist = popover ? popover.querySelectorAll("[data-rule]") : [];
+    var checkEndpoint = form.getAttribute("data-check-endpoint");
+    var checkTimer = null;
+    var checkSeq = 0;
+
+    function openPopover() {
+      if (!popover) return;
+      popover.hidden = false;
+      if (policyBtn) policyBtn.setAttribute("aria-expanded", "true");
+    }
+
+    function closePopover() {
+      if (!popover) return;
+      popover.hidden = true;
+      if (policyBtn) policyBtn.setAttribute("aria-expanded", "false");
+    }
+
+    function paintChecklist(checks) {
+      Array.prototype.forEach.call(checklist, function (item) {
+        var key = item.getAttribute("data-rule");
+        var met = Boolean(checks && checks[key]);
+        item.classList.toggle("is-met", met);
+        item.classList.toggle("is-unmet", Boolean(checks) && !met);
+      });
+    }
+
+    function setPasswordState(state, message) {
+      if (policyBtn) policyBtn.setAttribute("data-state", state);
+      if (stateText) stateText.textContent = message || "";
+      if (popMessage) {
+        popMessage.classList.toggle("is-valid", state === "valid");
+        popMessage.classList.toggle("is-invalid", state === "invalid");
+      }
+    }
+
+    function askServer() {
+      if (!checkEndpoint || !passwordInput) return;
+      var password = passwordInput.value;
+      var seq = ++checkSeq;
+
+      if (!password) {
+        paintChecklist(null);
+        setPasswordState("empty", "");
+        if (popMessage) {
+          popMessage.textContent =
+            "Enforced by the authentication server. The tick turns green when your password passes.";
         }
-      );
+        return;
+      }
+
+      setPasswordState("pending", "Checking password…");
+
+      var payload = new FormData();
+      payload.append("password", password);
+      payload.append("email", emailInput ? emailInput.value : "");
+      payload.append("name", nameInput ? nameInput.value : "");
+      payload.append("csrf_token", tokenField ? tokenField.value : "");
+
+      fetch(checkEndpoint, {
+        method: "POST",
+        headers: {
+          "Accept": "application/json",
+          "X-Requested-With": "fetch",
+          "X-CSRF-Token": tokenField ? tokenField.value : ""
+        },
+        body: payload,
+        credentials: "same-origin"
+      })
+        .then(function (response) {
+          return response.json().catch(function () { return null; });
+        })
+        .then(function (data) {
+          if (seq !== checkSeq || !data) return;
+          if (data.csrfToken && tokenField) tokenField.value = data.csrfToken;
+          paintChecklist(data.checks);
+          if (data.empty) {
+            setPasswordState("empty", "");
+            return;
+          }
+          if (data.valid) {
+            setPasswordState("valid", "Password meets the policy.");
+            if (popMessage) {
+              popMessage.textContent =
+                "This password meets the Alpha Group policy. Submitting it to the server…";
+            }
+          } else {
+            setPasswordState("pending", data.violations && data.violations[0] ? data.violations[0] : "Password does not meet the policy yet.");
+            if (popMessage) {
+              popMessage.textContent =
+                (data.violations && data.violations[0]) || "Password does not meet the policy yet.";
+            }
+          }
+        })
+        .catch(function () {
+          if (seq !== checkSeq) return;
+          setPasswordState("empty", "");
+        });
     }
 
-    function suggestPassword() {
-      if (!window.AlphaPassword || !passwordInput) return null;
-      var generated = window.AlphaPassword.generate(16);
-      passwordInput.value = generated;
-      // Reveal it so the person can note it down before submitting.
-      passwordInput.type = "text";
-      setRevealState($("togglePassword"), true);
-      if (confirmInput) confirmInput.value = generated;
-      clearFieldError(passwordInput);
-      if (confirmInput) clearFieldError(confirmInput);
-      passwordInput.focus({ preventScroll: true });
-      try { passwordInput.setSelectionRange(generated.length, generated.length); } catch (error) { /* noop */ }
-      return generated;
+    function scheduleCheck() {
+      if (checkTimer) window.clearTimeout(checkTimer);
+      checkTimer = window.setTimeout(askServer, 320);
     }
 
+    if (policyBtn && popover) {
+      policyBtn.addEventListener("mouseenter", openPopover);
+      policyBtn.addEventListener("focus", openPopover);
+      policyBtn.addEventListener("click", function (event) {
+        event.preventDefault();
+        if (popover.hidden) openPopover();
+        else closePopover();
+      });
+
+      // Keep it open while the pointer is over the popover itself.
+      var closeTimer = null;
+      function scheduleClose() {
+        if (closeTimer) window.clearTimeout(closeTimer);
+        closeTimer = window.setTimeout(function () {
+          if (popover.contains(document.activeElement)) return;
+          closePopover();
+        }, 180);
+      }
+      policyBtn.addEventListener("mouseleave", scheduleClose);
+      popover.addEventListener("mouseenter", function () {
+        if (closeTimer) window.clearTimeout(closeTimer);
+      });
+      popover.addEventListener("mouseleave", scheduleClose);
+      popover.addEventListener("keydown", function (event) {
+        if (event.key === "Escape") {
+          closePopover();
+          if (policyBtn) policyBtn.focus();
+        }
+      });
+      document.addEventListener("click", function (event) {
+        if (popover.hidden) return;
+        if (popover.contains(event.target) || policyBtn.contains(event.target)) return;
+        closePopover();
+      });
+    }
+
+    if (passwordInput) {
+      passwordInput.addEventListener("input", scheduleCheck);
+      passwordInput.addEventListener("blur", function () {
+        if (checkTimer) window.clearTimeout(checkTimer);
+        askServer();
+      });
+      askServer();
+    }
+
+    /* --- strong-password suggestion (signup popover) ---------------- */
     Array.prototype.forEach.call(
       document.querySelectorAll("[data-suggest-password]"),
       function (node) {
         node.addEventListener("click", function () {
-          if (policyModal) policyModal.close();
-          suggestPassword();
+          if (!window.AlphaPassword || !passwordInput) return;
+          var generated = window.AlphaPassword.generate(16);
+          passwordInput.value = generated;
+          passwordInput.type = "text";
+          setRevealState($("togglePassword"), true);
+          if (confirmInput) {
+            confirmInput.value = generated;
+            clearFieldError(confirmInput);
+          }
+          clearFieldError(passwordInput);
+          passwordInput.focus({ preventScroll: true });
+          try {
+            passwordInput.setSelectionRange(generated.length, generated.length);
+          } catch (error) { /* noop */ }
+          askServer();
         });
       }
     );

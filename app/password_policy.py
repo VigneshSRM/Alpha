@@ -87,12 +87,12 @@ class Rule:
 
 
 RULES: tuple[Rule, ...] = (
-    Rule("length", "At least 12 characters", "A memorable passphrase works well"),
+    Rule("length", "At least 12 characters", "a memorable passphrase"),
     Rule("uppercase", "One uppercase letter", "A–Z"),
     Rule("lowercase", "One lowercase letter", "a–z"),
     Rule("digits", "Two numbers", "0–9"),
     Rule("special", "Two special characters", "! @ # $ % & *"),
-    Rule("complexity", "No common patterns", "No names, e-mail or sequences"),
+    Rule("complexity", "No common patterns", "names, e-mails, sequences"),
 )
 
 RULE_LABELS = {rule.key: rule.label for rule in RULES}

@@ -129,19 +129,69 @@ class AuthRouteTests(unittest.TestCase):
         return self.post("/signup", data)
 
     # -- pages ------------------------------------------------------------
-    def test_login_page_contains_policy_affordances(self):
+    def test_login_page_layout(self):
         response = self.client.get("/login")
         html = response.get_data(as_text=True)
         self.assertEqual(response.status_code, 200)
-        self.assertIn("alpha-logo-light.png", html)
         self.assertIn("hero-bg.jpg", html)
-        # Full-bleed scene: form column on the left, photo on the right.
+        # Full-bleed scene: panel column on the left, photo on the right.
         self.assertIn('class="scene__photo"', html)
         self.assertIn('class="stage__col"', html)
+        # The logo now lives inside the login panel, not in a masthead.
+        self.assertIn('class="access__brand"', html)
+        self.assertNotIn('class="masthead"', html)
+        # Requested removals.
+        self.assertNotIn("Client portal", html)
+        self.assertNotIn("One place to begin", html)
+        self.assertNotIn("The Way to Lead", html)
+        self.assertNotIn("Secure client portal", html)
+
+    def test_password_requirements_are_on_the_hint_icon(self):
+        html = self.client.get("/login").get_data(as_text=True)
         self.assertIn('id="policyInfoBtn"', html)
-        self.assertIn('id="togglePassword"', html)
+        self.assertIn('data-state="empty"', html)
+        self.assertIn('id="policyPopover"', html)
+        self.assertIn("12+ characters · upper &amp; lower case · 2 numbers · 2 symbols", html)
         self.assertIn("At least 12 characters", html)
-        self.assertIn("Sessions by Supabase Auth", html)
+        self.assertIn('id="togglePassword"', html)
+        self.assertIn('data-check-endpoint="/api/password-check"', html)
+        # The old pill-style policy button is gone.
+        self.assertNotIn("pill-btn", html)
+
+    # -- live password check ---------------------------------------------
+    def test_password_check_reports_policy_verdict(self):
+        token = self.csrf()
+        good = self.post("/api/password-check", {"password": VALID_PASSWORD}, token=token)
+        self.assertEqual(good.status_code, 200)
+        self.assertTrue(good.json["valid"])
+        self.assertTrue(all(good.json["checks"].values()))
+
+        weak = self.post("/api/password-check", {"password": "weakpass"}, token=token)
+        self.assertFalse(weak.json["valid"])
+        self.assertEqual(weak.json["checks"]["length"], False)
+        self.assertTrue(weak.json["violations"])
+
+        empty = self.post("/api/password-check", {"password": ""}, token=token)
+        self.assertTrue(empty.json["empty"])
+        self.assertFalse(empty.json["valid"])
+
+    def test_password_check_rejects_personal_data(self):
+        token = self.csrf()
+        response = self.post(
+            "/api/password-check",
+            {"password": "Ravi@Kumar#2027", "email": "ravi.kumar@alphagroup.in", "name": "Ravi Kumar"},
+            token=token,
+        )
+        self.assertFalse(response.json["valid"])
+        self.assertFalse(response.json["checks"]["complexity"])
+
+    def test_password_check_requires_csrf(self):
+        response = self.client.post(
+            "/api/password-check",
+            data={"password": VALID_PASSWORD},
+            headers={"Accept": "application/json"},
+        )
+        self.assertEqual(response.status_code, 400)
 
     def test_no_demo_shortcuts_are_exposed(self):
         html = self.client.get("/login").get_data(as_text=True)
@@ -152,7 +202,10 @@ class AuthRouteTests(unittest.TestCase):
         self.assertEqual(self.client.get("/").status_code, 302)
         signup = self.client.get("/signup")
         self.assertEqual(signup.status_code, 200)
-        self.assertIn('id="authForm"', signup.get_data(as_text=True))
+        html = signup.get_data(as_text=True)
+        self.assertIn('id="authForm"', html)
+        self.assertIn('class="access__brand"', html)
+        self.assertNotIn("The Way to Lead", html)
 
     def test_health_reports_supabase(self):
         body = self.client.get("/healthz").json

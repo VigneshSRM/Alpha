@@ -9,25 +9,24 @@
   <div class="scene__vignette"></div>
 </div>
 
-<header class="masthead">
-  <a class="masthead__brand" href="{{ url_for('auth.login') }}">
-    <img src="{{ url_for('static', filename='img/alpha-logo-light.png', v=asset_v) }}"
-         alt="{{ app_name }} — {{ tagline }}" width="1997" height="787">
-  </a>
-</header>
-
-<main class="error-page">
-  <section class="error-card">
-    <p class="error-code">{{ code }}</p>
-    <h1>{{ message }}</h1>
-    <p>If this keeps happening, contact the Alpha Group IT desk.</p>
-    <a class="btn btn--primary btn--sm" href="{{ url_for('auth.login') }}">Back to sign in</a>
-  </section>
+<main class="stage">
+  <div class="stage__col">
+    <section class="access error-card">
+      <a class="access__brand" href="{{ url_for('auth.login') }}" aria-label="{{ app_name }}">
+        <img src="{{ url_for('static', filename='img/alpha-logo-light.png', v=asset_v) }}"
+             alt="{{ app_name }}" width="1200" height="472">
+      </a>
+      <p class="error-code">{{ code }}</p>
+      <h1>{{ message }}</h1>
+      <p class="access__sub">If this keeps happening, contact the Alpha Group IT desk.</p>
+      <a class="btn btn--primary" href="{{ url_for('auth.login') }}">Back to sign in</a>
+    </section>
+  </div>
 </main>
 
 <footer class="page-footer">
   <span>© {{ year }} {{ app_name }}</span>
   <span class="page-footer__sep" aria-hidden="true">•</span>
-  <span>{{ tagline }}</span>
+  <span>Sessions by {{ provider_name }} Auth</span>
 </footer>
 {% endblock %}
