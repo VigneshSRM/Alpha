@@ -217,17 +217,27 @@ ul { padding: 0; list-style: none; }
    Equal top and bottom padding keeps the panel optically centred. */
 .page--auth .stage { padding-block: clamp(20px, 3vw, 40px); }
 
+/* The footer sits in the right-hand corner of the page. */
+.page-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 0 clamp(20px, 5vw, 72px) clamp(12px, 2vh, 20px);
+  font-size: 0.68rem;
+  letter-spacing: 0.02em;
+  color: var(--text-muted);
+  text-align: right;
+}
+
+.page-footer__sep { opacity: 0.6; }
+
 .page--auth .page-footer {
   position: absolute;
   left: 0;
   right: 0;
   bottom: 0;
   z-index: 2;
-  /* Lined up with the panel's left edge so it reads as part of the layout. */
-  padding: 0 clamp(20px, 5vw, 72px) clamp(12px, 2vh, 20px);
-  font-size: 0.68rem;
-  letter-spacing: 0.02em;
-  color: var(--text-muted);
 }
 
 /* --------------------------------------------------------------------------
@@ -393,7 +403,7 @@ ul { padding: 0; list-style: none; }
   flex-wrap: wrap;
 }
 
-.field__label { display: inline-flex; align-items: center; }
+.field__label { display: inline-flex; align-items: center; gap: 6px; }
 
 .field__label {
   font-size: 0.78rem;
@@ -1265,6 +1275,198 @@ code {
 
 .error-card h1 { font-size: clamp(1.2rem, 2.4vw, 1.5rem); color: #fff; }
 .error-card p { color: var(--text-muted); font-size: 0.88rem; }
+
+
+/* Required fields are marked, because the browser's own bubbles are off
+   (the server is the only validator). */
+.field__req {
+  margin-left: 3px;
+  color: var(--orange);
+  font-weight: 800;
+  line-height: 1;
+}
+
+.form__req-note {
+  font-size: 0.76rem;
+  color: var(--text-muted);
+  margin-bottom: 2px;
+}
+
+.form__req-note .field__req { margin: 0 2px; }
+
+/* --------------------------------------------------------------------------
+   Onboarding — the business profile, captured right after registration
+   -------------------------------------------------------------------------- */
+.page--onboarding {
+  display: block;
+  min-height: 100vh;
+  padding: clamp(22px, 4vh, 48px) clamp(18px, 5vw, 64px) 88px;
+}
+
+.onb {
+  position: relative;
+  z-index: 2;
+  width: min(1040px, 100%);
+  margin: 0 auto;
+}
+
+.onb__brand { display: inline-block; width: min(180px, 46%); }
+.onb__brand img { width: 100%; height: auto; }
+
+.onb__head { margin: 22px 0 20px; }
+
+.onb__step {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+
+.onb__head h1 {
+  margin: 6px 0 8px;
+  font-size: clamp(1.5rem, 1.1rem + 1.4vw, 2rem);
+  line-height: 1.15;
+  color: #fff;
+}
+
+.onb__sub {
+  max-width: 62ch;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.onb__form { display: grid; gap: 18px; }
+
+.onb__alert {
+  padding: 11px 14px;
+  border-radius: var(--radius-sm);
+  background: rgba(122, 26, 12, 0.34);
+  border: 1px solid var(--danger-line);
+  color: #ffe2dc;
+  font-size: 0.84rem;
+}
+
+.onb__section {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px 20px;
+  padding: 20px 22px 22px;
+  border: 1px solid rgba(230, 230, 250, 0.12);
+  border-radius: var(--radius);
+  background: rgba(21, 9, 38, 0.82);
+  backdrop-filter: blur(6px);
+}
+
+.onb__legend {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+
+.onb__legend-note {
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  text-transform: none;
+  color: var(--text-muted);
+}
+
+.field--full { grid-column: 1 / -1; }
+
+/* The onboarding phone picker carries its own dial code, so it stays narrow. */
+.control--split .picker { min-width: 84px; }
+.control--split .picker__button > span:first-child { min-width: 30px; }
+
+.field__tag {
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  color: var(--text-muted);
+}
+
+/* Vertical choice: two cards, the radio itself is out of sight but in the tree. */
+.choices {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.choice {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 13px 15px;
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.04);
+  cursor: pointer;
+  transition: border-color 0.18s var(--ease), background 0.18s var(--ease);
+}
+
+.choice input {
+  margin-top: 3px;
+  accent-color: var(--orange);
+  flex: none;
+}
+
+.choice:has(input:checked) {
+  border-color: rgba(255, 215, 0, 0.7);
+  background: rgba(255, 215, 0, 0.08);
+}
+
+.choice input:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
+
+.choice__body { display: grid; gap: 2px; }
+.choice__title { font-weight: 700; font-size: 0.94rem; color: var(--text); }
+.choice__hint { font-size: 0.76rem; color: var(--text-muted); }
+
+/* Plain selects that live inside the shared control box. */
+.control__input--select {
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23b9b3d4' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 2px center;
+  background-size: 12px 12px;
+  padding-right: 24px;
+  cursor: pointer;
+}
+
+.control__input--select option { background: #150926; color: var(--text); }
+.control__input--select:invalid { color: rgba(230, 230, 250, 0.55); }
+
+.onb__note {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  border-top: 1px dashed rgba(230, 230, 250, 0.14);
+  padding-top: 14px;
+}
+
+.onb__actions { display: flex; justify-content: flex-end; }
+.onb__actions .btn { width: auto; min-width: 240px; }
+
+/* The footer belongs to the page, not to the form column. */
+.page--onboarding { padding-bottom: 18px; }
+
+.page--onboarding .page-footer {
+  width: 100%;
+  /* The page's own side padding is the gutter; adding it twice would double it. */
+  padding: 22px 0 4px;
+}
+
+@media (max-width: 760px) {
+  .onb__section { grid-template-columns: minmax(0, 1fr); padding: 18px 16px 20px; }
+  .choices { grid-template-columns: minmax(0, 1fr); }
+  .onb__actions .btn { width: 100%; }
+}
 
 /* --------------------------------------------------------------------------
    Responsive

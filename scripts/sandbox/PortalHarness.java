@@ -1,6 +1,7 @@
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 
+import in.alphagroup.portal.onboarding.OnboardingRules;
 import in.alphagroup.portal.policy.PasswordPolicy;
 import in.alphagroup.portal.policy.PhoneNumbers;
 import in.alphagroup.portal.policy.PolicyResult;
@@ -49,6 +50,7 @@ public final class PortalHarness {
 
         server.createContext("/api/password-check", PortalHarness::check);
         server.createContext("/signup", PortalHarness::signup);
+        server.createContext("/onboarding", PortalHarness::onboarding);
         server.createContext("/healthz", ex -> json(ex, 200, "{\"status\":\"ok\"}"));
         server.createContext("/", PortalHarness::statics);
 
@@ -190,8 +192,70 @@ public final class PortalHarness {
 
         System.out.printf(Locale.ROOT, "POST /signup  %s -> 201 registered%n", email);
         json(ex, 200, "{\"ok\":true,\"code\":\"registered\","
-                + "\"message\":\"Account created. Welcome to Alpha Group of India.\","
-                + "\"redirect\":\"/dashboard?welcome=1\"}");
+                + "\"message\":\"Account created. Next: your business profile.\","
+                + "\"redirect\":\"/onboarding\"}");
+    }
+
+    /* ---- onboarding: the repo's own OnboardingRules ---------------------- */
+
+    private static void onboarding(HttpExchange ex) throws IOException {
+        if (!"POST".equalsIgnoreCase(ex.getRequestMethod())) {
+            statics(ex);
+            return;
+        }
+        String body = new String(ex.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
+        Map<String, String> form = parseForm(ex.getRequestHeaders().getFirst("Content-Type"), body);
+
+        Map<String, String> errors = OnboardingRules.validate(form);
+        System.out.printf(Locale.ROOT, "POST /onboarding  %s -> %s%n",
+                form.getOrDefault("businessName", ""),
+                errors.isEmpty() ? "303 /dashboard?welcome=1" : "422 " + errors.keySet());
+
+        if (!errors.isEmpty()) {
+            // The real controller re-renders the page with the errors bound to
+            // each field. Here the same markup is edited in place.
+            String html = Files.readString(site.resolve("onboarding.html"), StandardCharsets.UTF_8);
+            for (var entry : errors.entrySet()) {
+                html = markField(html, entry.getKey(), entry.getValue());
+            }
+            byte[] data = html.getBytes(StandardCharsets.UTF_8);
+            ex.getResponseHeaders().set("Content-Type", "text/html; charset=utf-8");
+            ex.getResponseHeaders().set("Cache-Control", "no-store");
+            ex.sendResponseHeaders(422, data.length);
+            try (OutputStream out = ex.getResponseBody()) { out.write(data); }
+            return;
+        }
+
+        ex.getResponseHeaders().set("Location",
+                "/dashboard?welcome=1&business="
+                        + java.net.URLEncoder.encode(form.getOrDefault("businessName", ""),
+                                StandardCharsets.UTF_8).replace("+", "%20"));
+        ex.getResponseHeaders().set("Cache-Control", "no-store");
+        ex.sendResponseHeaders(303, -1);
+        ex.close();
+    }
+
+    /** Paints one field the way the Thymeleaf template does on a bad submit. */
+    private static String markField(String html, String key, String message) {
+        String needle = "data-field=\"" + key + "\"";
+        int at = html.indexOf(needle);
+        if (at < 0) return html;
+
+        int open = html.lastIndexOf("<div class=\"field", at);
+        int openEnd = html.indexOf('>', open);
+        String opening = html.substring(open, openEnd + 1)
+                .replaceFirst("class=\"field[^\"]*\"", "class=\"field is-invalid\"");
+
+        String rest = html.substring(openEnd + 1);
+        int msgAt = rest.indexOf("<p class=\"field__error\"");
+        if (msgAt < 0) {
+            return html.substring(0, open) + opening + rest;
+        }
+        int bodyStart = rest.indexOf('>', msgAt) + 1;
+        int bodyEnd = rest.indexOf("</p>", bodyStart);
+        String marked = rest.substring(0, bodyStart) + message + rest.substring(bodyEnd);
+
+        return html.substring(0, open) + opening + marked;
     }
 
     /* ---- static files ---------------------------------------------------- */
@@ -206,6 +270,7 @@ public final class PortalHarness {
             case "/", "/login" -> "login.html";
             case "/signup" -> "signup.html";
             case "/account" -> "dashboard.html";
+            case "/onboarding" -> "onboarding.html";
             case "/reset-password" -> "reset-password.html";
             default -> path.replaceFirst("^/", "");
         };

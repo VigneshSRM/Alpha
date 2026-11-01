@@ -1003,7 +1003,7 @@
             showFlash(
               data.message
                 || (mode === "signup"
-                  ? "Account created. Taking you to your dashboard…"
+                  ? "Account created. Next: your business profile…"
                   : "Signed in. Taking you to your dashboard…"),
               "success"
             );
@@ -1011,7 +1011,9 @@
             if (submitBtn) submitBtn.disabled = true;
             /* Long enough to read the confirmation before the page moves. */
             window.setTimeout(function () {
-              window.location.assign(data.redirect || "/dashboard");
+              window.location.assign(
+                data.redirect || (mode === "signup" ? "/onboarding" : "/dashboard")
+              );
             }, 2000);
             return;
           }
@@ -1026,25 +1028,29 @@
           // Paint the backend's field-level verdicts.
           var errors = data.errors || {};
           var focused = false;
+          var painted = 0;
           Object.keys(errors).forEach(function (key) {
             var input = fieldMap[key];
-            if (input) {
-              setFieldError(input, errors[key]);
-              if (!focused) {
-                input.focus({ preventScroll: true });
-                focused = true;
-              }
+            if (!input) return;
+            setFieldError(input, errors[key]);
+            painted++;
+            if (!focused) {
+              input.focus({ preventScroll: true });
+              focused = true;
             }
           });
 
-          var failure = failureMessage(mode, result);
-          var summary = failure.text;
-          var first = Object.keys(errors)[0];
-          // Field notes already say what is wrong; the banner says why it failed.
-          if (data.code === "validation" && first) {
-            summary = "That did not go through — " + errors[first];
+          // Every problem already has a note under its own field, so the red
+          // box above the form would only repeat them. Keep the banner for
+          // failures that have no field to point at.
+          var named = data.code && data.code !== "validation";
+          if (painted > 0 && !named) {
+            hideFlash();
+            return;
           }
-          showFlash(summary, "error", failure);
+
+          var failure = failureMessage(mode, result);
+          showFlash(failure.text, "error", failure);
         })
         .catch(function (error) {
           setLoading(submitBtn, false);

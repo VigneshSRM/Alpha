@@ -1,6 +1,7 @@
 package in.alphagroup.portal.web;
 
 import in.alphagroup.portal.config.AlphaProperties;
+import in.alphagroup.portal.onboarding.OnboardingService;
 import in.alphagroup.portal.policy.PhoneNumbers;
 import in.alphagroup.portal.user.PortalUser;
 import jakarta.servlet.http.HttpSession;
@@ -24,9 +25,11 @@ public class DashboardController {
             DateTimeFormatter.ofPattern("d MMM yyyy", Locale.ENGLISH).withZone(ZoneOffset.UTC);
 
     private final AlphaProperties properties;
+    private final OnboardingService onboarding;
 
-    public DashboardController(AlphaProperties properties) {
+    public DashboardController(AlphaProperties properties, OnboardingService onboarding) {
         this.properties = properties;
+        this.onboarding = onboarding;
     }
 
     @GetMapping("/dashboard")
@@ -36,6 +39,11 @@ public class DashboardController {
             @RequestParam(value = "welcome", required = false) String welcome,
             Model model) {
         PortalUser user = (PortalUser) authentication.getPrincipal();
+
+        // Nobody reaches the dashboard without a business behind the account.
+        if (onboarding.forUser(user.getId()).isEmpty()) {
+            return "redirect:/onboarding";
+        }
 
         Map<String, Object> account = new LinkedHashMap<>();
         account.put("name", user.getFullName());

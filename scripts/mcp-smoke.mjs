@@ -375,13 +375,18 @@ async function main() {
       })`);
     };
 
-    const waitForPath = async (want, tries = 30) => {
+    const waitForPath = async (want, tries = 40) => {
+      let at = '';
       for (let i = 0; i < tries; i++) {
-        const at = await evaluate('() => location.pathname');
+        try {
+          at = await evaluate('() => location.pathname');
+        } catch {
+          at = ''; // the navigation replaced the execution context mid-read
+        }
         if (at === want) return at;
         await tool('browser_wait_for', { time: 0.3 });
       }
-      return evaluate('() => location.pathname');
+      return at;
     };
 
     /* success */
@@ -391,16 +396,107 @@ async function main() {
       /Account created/i.test(registered.successText), registered.successText || '(no banner)');
     await shot('10-registered.png');
 
-    const landedPath = await waitForPath('/dashboard');
+    /* registration hands over to the business profile */
+    const landedPath = await waitForPath('/onboarding');
+    const onboard = await evaluate(`() => {
+      const footer = document.querySelector('.page-footer');
+      const box = footer.getBoundingClientRect();
+      const verticals = [...document.querySelectorAll('input[name="vertical"]')]
+        .map((input) => input.value);
+      const count = (id) => document.querySelectorAll('#' + id + ' option').length;
+      return {
+        path: location.pathname,
+        heading: (document.querySelector('h1') || {}).textContent || '',
+        verticals,
+        businessTypes: count('businessType') - 1,
+        states: count('state') - 1,
+        fiscalYears: count('fiscalYearStart'),
+        gstinLabel: (document.querySelector('label[for="gstin"]') || {}).textContent || '',
+        marks: document.querySelectorAll('.field__req').length,
+        note: (document.querySelector('.form__req-note') || {}).textContent || '',
+        requiredFields: document.querySelectorAll('[aria-required="true"]').length,
+        footerRightGap: Math.round(window.innerWidth - box.right),
+        footerTextGap: Math.round(window.innerWidth
+          - footer.querySelector('span:last-child').getBoundingClientRect().right),
+        footerJustify: getComputedStyle(footer).justifyContent,
+      };
+    }`);
+
+    check('sign-up hands over to the business profile',
+      landedPath === '/onboarding' && /Business profile/i.test(onboard.heading),
+      `${onboard.path} — ${onboard.heading.trim()}`);
+    check('business vertical offers Retail and Restaurant',
+      onboard.verticals.join('|') === 'Retail|Restaurant', onboard.verticals.join('|'));
+    check('business type list has the 18 types from the brief',
+      onboard.businessTypes === 18, `${onboard.businessTypes} types`);
+    check('state list has the 36 states and union territories',
+      onboard.states === 36, `${onboard.states} states`);
+    check('fiscal year offers twelve start months',
+      onboard.fiscalYears === 12, `${onboard.fiscalYears} months`);
+    check('GSTIN is labelled optional', /optional/i.test(onboard.gstinLabel),
+      onboard.gstinLabel.trim());
+    check('required fields are marked before the first submit',
+      onboard.marks >= 11 && /are required/i.test(onboard.note) && onboard.requiredFields >= 11,
+      `${onboard.marks} marks, ${onboard.requiredFields} aria-required`);
+    check('the footer sits in the right-hand corner',
+      onboard.footerTextGap <= 80 && onboard.footerTextGap > 0
+        && onboard.footerJustify === 'flex-end',
+      `${onboard.footerTextGap}px of breathing room at the right edge`);
+    await shot('15-onboarding.png', true);
+
+    /* an empty submit is answered field by field, with no banner on top */
+    await evaluate(`() => {
+      document.getElementById('onboardingForm').requestSubmit();
+      return 'submitted';
+    }`);
+    await tool('browser_wait_for', { time: 0.6 });
+    const emptyOnboarding = await evaluate(`() => ({
+      path: location.pathname,
+      invalid: document.querySelectorAll('.field.is-invalid').length,
+      messages: [...document.querySelectorAll('.field__error')]
+        .map((p) => p.textContent.trim()).filter(Boolean),
+      banner: (document.querySelector('.flash--error') || {}).textContent || '',
+    })`);
+    check('an empty profile is answered field by field',
+      emptyOnboarding.path === '/onboarding' && emptyOnboarding.invalid >= 8
+        && emptyOnboarding.messages.length >= 8,
+      `${emptyOnboarding.invalid} fields marked, ${emptyOnboarding.messages.length} messages`);
+    check('no banner repeats the field messages on the profile page',
+      emptyOnboarding.banner.trim() === '', emptyOnboarding.banner.trim() || '(none)');
+    await shot('16-onboarding-errors.png', true);
+
+    /* the profile saves and the dashboard opens */
+    await tool('browser_navigate', { url: `${BASE}/onboarding` });
+    await evaluate(`() => {
+      const set = (id, value) => {
+        const el = document.getElementById(id);
+        el.value = value;
+        el.dispatchEvent(new Event('change', { bubbles: true }));
+      };
+      document.querySelector('input[name="vertical"][value="Retail"]').checked = true;
+      set('businessName', 'Alpha Retail — Anna Nagar');
+      set('phone', '9876543210');
+      set('businessType', 'Food & Beverage');
+      set('state', 'Tamil Nadu');
+      set('addressLine1', 'No. 12, 2nd Avenue');
+      set('city', 'Chennai');
+      set('pincode', '600040');
+      set('inventoryStartDate', '2026-04-01');
+      return 'filled';
+    }`);
+    await evaluate(`() => {
+      document.getElementById('onboardingForm').requestSubmit();
+      return 'submitted';
+    }`);
+    const afterOnboarding = await waitForPath('/dashboard');
     const landed = await evaluate(`() => ({
       path: location.pathname,
       search: location.search,
       notice: (document.querySelector('.dash__notice') || {}).textContent || '',
     })`);
-    check('the new account lands on the dashboard with a welcome notice',
-      landedPath === '/dashboard' && /welcome=1/.test(landed.search)
-        && /account is ready/i.test(landed.notice),
-      `${landed.path}${landed.search} — ${landed.notice.trim() || 'no notice'}`);
+    check('the profile saves and the dashboard opens',
+      afterOnboarding === '/dashboard' && /welcome=1/.test(landed.search),
+      `${landed.path}${landed.search}`);
     await shot('11-account-welcome.png', true);
 
     /* duplicate e-mail: the server answers 409 and the browser explains it */

@@ -32,3 +32,11 @@ java -cp out PortalHarness 8080 /path/to/rendered/pages
 `reset-password.html`, `dashboard.html` plus `css/`, `js/` and `img/`. The
 screenshots in `preview/spring-boot/` were taken from exactly those pages; see
 that folder's README for how they are produced from the templates.
+
+## `/onboarding`
+
+The harness also serves the business-profile page and answers its POST with the
+repo's own `OnboardingRules.validate(...)`: a clean form gets a `303` to
+`/dashboard?welcome=1`, a bad one gets `422` and the same page with each
+offending field marked and its message filled in — exactly what
+`OnboardingController` renders through Thymeleaf.

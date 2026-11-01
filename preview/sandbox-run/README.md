@@ -50,11 +50,13 @@ failed.
 | `07-phone-search.png` | typing “united king” narrows the list to `+44 United Kingdom` |
 | `08-phone-gb.png` | after choosing it: the button reads `+44` and the hint switches to “10 digits for United Kingdom” |
 | `09-phone-mobile.png` | 390×844 with the list open — it stays inside the viewport, no sideways scroll |
-| `10-registered.png` | the server answered `200 {"ok":true,…}` — “Account created. Welcome to Alpha Group of India.” |
-| `11-account-welcome.png` | the redirect target carries `?welcome=1`, so the dashboard confirms it too |
+| `10-registered.png` | the server answered `200 {"ok":true,…}` — “Account created. Next: your business profile.” |
+| `11-account-welcome.png` | the business profile was saved, `/onboarding` redirected with `?welcome=1`, and the dashboard confirms it |
 | `12-signup-duplicate.png` | the same address again: `409 user_exists`, the reason in the banner, the field flagged, and a “Sign in instead” link |
 | `13-signup-network.png` | `fetch` rejected — “Can't reach the server. Check your connection and try again.” |
 | `14-signup-server-error.png` | a `500` — “Registration failed on our side…”, not a silent spinner |
+| `15-onboarding.png` | “Set up your Business profile”: vertical cards, 236 dial codes, 18 business types, 36 states, GSTIN optional, and the footer in the right-hand corner |
+| `16-onboarding-errors.png` | an empty submit: `422` from `OnboardingRules`, nine fields marked with their own message — and no banner repeating them |
 
 ## Reproduce it
 
@@ -77,7 +79,7 @@ the country picker's contents, and the absence of stray banners. Last run:
 [PASS] country picker lists every country — 236 options
 [PASS] India is preselected with its dial code — IN +91 India
 [PASS] the closed picker shows only the dial code — +91
-[PASS] the picker leaves most of the field to the number — 57px of 402px
+[PASS] the picker leaves most of the field to the number — 58px of 402px
 [PASS] picker has an accessible name — Country dialling code
 [PASS] hint states the digits India uses — 10 digits for India
 [PASS] mobile field has a clean accessible name — Mobile number
@@ -88,13 +90,23 @@ the country picker's contents, and the absence of stray banners. Last run:
 [PASS] a country whose name starts with the query is ranked first — 2 matches, first: +91 India
 [PASS] India can be picked again with the keyboard — IN
 [PASS] a too-short number is flagged while typing — Keep going — India numbers have 10 digits.
-[PASS] a successful registration says so — Account created. Welcome to Alpha Group of India.
-[PASS] the new account lands on the dashboard with a welcome notice — /dashboard?welcome=1
+[PASS] a successful registration says so — Account created. Next: your business profile.
+[PASS] sign-up hands over to the business profile — /onboarding — Set up your Business profile
+[PASS] business vertical offers Retail and Restaurant — Retail|Restaurant
+[PASS] business type list has the 18 types from the brief — 18 types
+[PASS] state list has the 36 states and union territories — 36 states
+[PASS] fiscal year offers twelve start months — 12 months
+[PASS] GSTIN is labelled optional — GSTIN Number (Optional)
+[PASS] required fields are marked before the first submit — 12 marks, 11 aria-required
+[PASS] the footer sits in the right-hand corner — 64px of breathing room at the right edge
+[PASS] an empty profile is answered field by field — 9 fields marked, 9 messages
+[PASS] no banner repeats the field messages on the profile page — (none)
+[PASS] the profile saves and the dashboard opens — /dashboard?welcome=1&business=Alpha%20Retail…
 [PASS] a duplicate e-mail is explained, with a way out — That e-mail address is already registered.
 [PASS] a dead connection is reported as such — Can't reach the server. Check your connection and try again.
 [PASS] a server failure says the failure is ours — Registration failed on our side — the server could not finish it.
 ...
-35 checks, 0 failures
+45 checks, 0 failures
 ```
 
 ## To run the actual application

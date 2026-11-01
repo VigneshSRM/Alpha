@@ -344,11 +344,11 @@ public class AuthController {
                 Map<String, Object> body = new LinkedHashMap<>();
                 body.put("ok", true);
                 body.put("code", "registered");
-                body.put("message", "Account created. Welcome to Alpha Group of India.");
-                body.put("redirect", "/dashboard?welcome=1");
+                body.put("message", "Account created. Next: your business profile.");
+                body.put("redirect", "/onboarding");
                 return ResponseEntity.ok(body);
             }
-            return "redirect:/dashboard?welcome=1";
+            return "redirect:/onboarding";
 
         } catch (PortalUserService.EmailAlreadyUsedException taken) {
             String message = "That e-mail address is already registered. Sign in instead.";

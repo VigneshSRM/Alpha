@@ -108,11 +108,12 @@ Flyway owns the schema. `spring.jpa.hibernate.ddl-auto=none` — nothing is crea
 | `V2__spring_session.sql` | Spring Session JDBC tables — sessions survive a redeploy |
 | `V3__password_reset_token.sql` | single-use reset tokens, stored as SHA-256 only |
 | `V4__portal_user_phone.sql` | `phone` — E.164 mobile number captured at sign-up |
+| `V5__business_profile.sql` | `business_profile` — one row per account: vertical, name, phone, type, GSTIN, address, and the accounting preferences |
 
 To add a change, drop a new `V5__…sql` in `db/migration`; never edit an applied file.
 
 The browser is told what happened, in words: a successful registration says so
-and lands on `/dashboard?welcome=1`; a duplicate e-mail, a closed sign-up, an
+and lands on `/onboarding` — the business profile; a duplicate e-mail, a closed sign-up, an
 expired CSRF token, a 500 or a dead connection each get their own message, with
 a link where one helps. `auth.js` only paints what the server decided — see
 `failureMessage()` in `static/js/auth.js`.
@@ -127,10 +128,27 @@ a link where one helps. `auth.js` only paints what the server decided — see
 | POST | `/logout` | public (CSRF) | sign out, clear remember-me cookie |
 | POST | `/forgot-password` | public | issue a reset token (always answers generically) |
 | GET/POST | `/reset-password` | token | choose a new password |
+| GET/POST | `/onboarding` | session | “Set up your Business profile”, validated by `OnboardingRules` |
 | GET | `/dashboard` | session | protected area |
 | GET | `/session` | session | JSON session status |
 | POST | `/api/password-check` | public (CSRF) | live policy verdict |
 | GET | `/healthz` | public | liveness probe |
+
+## 6a. After registration — the business profile
+
+`/onboarding` is one page in two halves: **Business** (vertical, name, phone,
+type, country, state, GSTIN, address) and **Preferences** (language, time zone,
+base currency, fiscal year, inventory start date). The lists live in
+`onboarding/OnboardingRules.java` — 18 business types, 36 states and union
+territories, 12 fiscal-year starts — and the same class validates the POST, so
+the HTML and the rulebook cannot drift. GSTIN is optional and checked against
+the 15-character format only when it is filled in. Saving writes one
+`business_profile` row and redirects to `/dashboard?welcome=1`, which is where
+the welcome text now lives.
+
+Every required field is marked with an orange asterisk and carries
+`aria-required="true"`; the forms are `novalidate`, so the mark out front is the
+only promise and the server is the only judge.
 
 ## 7. Security notes
 
@@ -170,6 +188,8 @@ src/main/java/in/alphagroup/portal/
   policy/      PasswordPolicy (the single source of truth), Rule, PolicyResult
   security/    LoginThrottle, AttemptKeys
   user/        PortalUser (JPA + UserDetails), repository, service
+  onboarding/  BusinessProfile, repository, OnboardingService,
+               OnboardingRules (the lists and the rules)
   reset/       PasswordResetToken, repository, service
   util/        Emails, Requests, SafeRedirect
   web/         AuthController, ResetPasswordController, PasswordCheckController,

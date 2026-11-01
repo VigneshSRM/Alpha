@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments :: head('Set up your business profile · ' + ${appName})}"></head>
+
+<body class="page page--onboarding">
+
+<th:block th:replace="~{fragments :: scene}"></th:block>
+
+<main class="onb">
+  <a class="onb__brand" th:href="@{/dashboard}">
+    <img th:src="@{/img/alpha-logo-light.png(v=${assetV})}" th:alt="${appName}"
+         width="1200" height="472">
+  </a>
+
+  <header class="onb__head">
+    <p class="onb__step">Step 2 of 2</p>
+    <h1>Set up your Business profile</h1>
+    <p class="onb__sub">
+      Stock, invoices and reports all start from these details. A few of them can
+      be changed later from Settings.
+    </p>
+  </header>
+
+  <form class="onb__form" id="onboardingForm" method="post" th:action="@{/onboarding}" novalidate>
+    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+
+    <p class="onb__alert" role="alert" th:if="${errorCount > 0}"
+       th:text="'Please fix the ' + ${errorCount} + ' highlighted field(s) below.'">
+      Please fix the highlighted fields below.
+    </p>
+
+    <p class="form__req-note">Fields marked <span class="field__req" aria-hidden="true">*</span> are required.</p>
+
+    <!-- ---------------------------------------------------------------- -->
+    <section class="onb__section">
+      <h2 class="onb__legend">Business</h2>
+
+      <div class="field field--full" data-field="vertical">
+        <span class="field__label" id="verticalLabel">Business Vertical<span class="field__req" aria-hidden="true">*</span></span>
+        <div class="choices" role="radiogroup" aria-labelledby="verticalLabel" aria-required="true">
+          <label class="choice" th:each="v : ${verticals}">
+            <input type="radio" name="vertical" th:value="${v}"
+                   th:checked="${form['vertical'] == v}">
+            <span class="choice__body">
+              <span class="choice__title" th:text="${v}">Retail</span>
+              <span class="choice__hint" th:text="${v == 'Retail'
+                    ? 'Shops, counters and online stores'
+                    : 'Dining rooms, kitchens and delivery'}">Shops and counters</span>
+            </span>
+          </label>
+        </div>
+        <p class="field__error" th:text="${errors['vertical']}"></p>
+      </div>
+
+      <div class="field field--full" data-field="businessName">
+        <label class="field__label" for="businessName">Business Name<span class="field__req" aria-hidden="true">*</span></label>
+        <div class="control">
+          <span class="control__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor"
+                 stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 9h16l-1 11H5L4 9Z"/><path d="M9 9V6.5a3 3 0 0 1 6 0V9"/>
+            </svg>
+          </span>
+          <input class="control__input" id="businessName" name="businessName" type="text"
+                 autocomplete="organization" maxlength="120" placeholder="Alpha Retail — Anna Nagar"
+                 th:value="${form['businessName']}" aria-describedby="businessNameError" required aria-required="true">
+        </div>
+        <p class="field__error" id="businessNameError" th:text="${errors['businessName']}"></p>
+      </div>
+
+      <div class="field field--full" data-field="phone">
+        <label class="field__label" for="phone">Phone Number<span class="field__req" aria-hidden="true">*</span></label>
+        <div class="control control--split">
+          <span class="control__icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor"
+                 stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18.5h2"/>
+            </svg>
+          </span>
+          <div class="picker" data-picker>
+            <select class="control__select" id="country_code" name="country_code"
+                    aria-label="Country dialling code">
+              <option th:each="c : ${countries}"
+                      th:value="${c.iso}"
+                      th:text="'+' + ${c.dialCode}"
+                      th:title="${c.name}"
+                      th:attr="data-digits=${c.minDigits + '-' + c.maxDigits},
+                               data-name=${c.name}"
+                      th:selected="${c.iso == form['country_code']}">+91</option>
+            </select>
+          </div>
+          <input class="control__input" id="phone" name="phone" type="tel" inputmode="tel"
+                 autocomplete="tel-national" spellcheck="false" placeholder="98765 43210"
+                 maxlength="20" th:value="${form['phone']}" aria-describedby="phoneHint phoneError" required aria-required="true">
+        </div>
+        <p class="field__hint" id="phoneHint" data-phone-hint>10 digits for the selected country</p>
+        <p class="field__error" id="phoneError" th:text="${errors['phone']}"></p>
+      </div>
+
+      <div class="field" data-field="businessType">
+        <label class="field__label" for="businessType">Business Type<span class="field__req" aria-hidden="true">*</span></label>
+        <div class="control">
+          <select class="control__input control__input--select" id="businessType" name="businessType" required aria-required="true">
+            <option value="">Select a business type</option>
+            <option th:each="type : ${businessTypes}" th:value="${type}" th:text="${type}"
+                    th:selected="${form['businessType'] == type}">Apparel, Footwear &amp; Accessories</option>
+          </select>
+        </div>
+        <p class="field__error" th:text="${errors['businessType']}"></p>
+      </div>
+
+      <div class="field" data-field="country">
+        <label class="field__label" for="country">Country<span class="field__req" aria-hidden="true">*</span></label>
+        <div class="control">
+          <select class="control__input control__input--select" id="country" name="country" required aria-required="true">
+            <option th:each="c : ${countries}" th:value="${c.iso}" th:text="${c.name}"
+                    th:selected="${c.iso == form['country']}">India</option>
+          </select>
+        </div>
+        <p class="field__error" th:text="${errors['country']}"></p>
+      </div>
+
+      <div class="field" data-field="state">
+        <label class="field__label" for="state">State/Union Territory<span class="field__req" aria-hidden="true">*</span></label>
+        <div class="control">
+          <select class="control__input control__input--select" id="state" name="state" required aria-required="true">
+            <option value="">Select a State/Territory</option>
+            <option th:each="state : ${states}" th:value="${state}" th:text="${state}"
+                    th:selected="${form['state'] == state}">Tamil Nadu</option>
+          </select>
+        </div>
+        <p class="field__error" th:text="${errors['state']}"></p>
+      </div>
+
+      <div class="field" data-field="gstin">
+        <label class="field__label" for="gstin">GSTIN Number <span class="field__tag">(Optional)</span></label>
+        <div class="control">
+          <input class="control__input" id="gstin" name="gstin" type="text" maxlength="15"
+                 autocomplete="off" spellcheck="false" placeholder="22AAAAA0000A1Z5"
+                 th:value="${form['gstin']}">
+        </div>
+        <p class="field__error" th:text="${errors['gstin']}"></p>
+      </div>
+    </section>
+
+    <!-- ---------------------------------------------------------------- -->
+    <section class="onb__section">
+      <h2 class="onb__legend">
+        Business Address
+        <span class="onb__legend-note">Where stock is received and invoices are raised</span>
+      </h2>
+
+      <div class="field field--full" data-field="addressLine1">
+        <label class="field__label" for="addressLine1">Street Address<span class="field__req" aria-hidden="true">*</span></label>
+        <div class="control">
+          <input class="control__input" id="addressLine1" name="addressLine1" type="text"
+                 autocomplete="address-line1" maxlength="160" placeholder="No. 12, 2nd Avenue"
+                 th:value="${form['addressLine1']}" required aria-required="true">
+        </div>
+        <p class="field__error" th:text="${errors['addressLine1']}"></p>
+      </div>
+
+      <div class="field field--full" data-field="addressLine2">
+        <label class="field__label" for="addressLine2">Area, Landmark <span class="field__tag">(Optional)</span></label>
+        <div class="control">
+          <input class="control__input" id="addressLine2" name="addressLine2" type="text"
+                 autocomplete="address-line2" maxlength="160" placeholder="Anna Nagar"
+                 th:value="${form['addressLine2']}">
+        </div>
+        <p class="field__error" th:text="${errors['addressLine2']}"></p>
+      </div>
+
+      <div class="field" data-field="city">
+        <label class="field__label" for="city">City<span class="field__req" aria-hidden="true">*</span></label>
+        <div class="control">
+          <input class="control__input" id="city" name="city" type="text"
+                 autocomplete="address-level2" maxlength="80" placeholder="Chennai"
+                 th:value="${form['city']}" required aria-required="true">
+        </div>
+        <p class="field__error" th:text="${errors['city']}"></p>
+      </div>
+
+      <div class="field" data-field="pincode">
+        <label class="field__label" for="pincode">PIN Code<span class="field__req" aria-hidden="true">*</span></label>
+        <div class="control">
+          <input class="control__input" id="pincode" name="pincode" type="text" inputmode="numeric"
+                 autocomplete="postal-code" maxlength="10" placeholder="600040"
+                 th:value="${form['pincode']}" required aria-required="true">
+        </div>
+        <p class="field__error" th:text="${errors['pincode']}"></p>
+      </div>
+    </section>
+
+    <!-- ---------------------------------------------------------------- -->
+    <section class="onb__section">
+      <h2 class="onb__legend">
+        Preferences
+        <span class="onb__legend-note">Defaults for how the numbers are worked out</span>
+      </h2>
+
+      <div class="field" data-field="language">
+        <label class="field__label" for="language">Language</label>
+        <div class="control">
+          <select class="control__input control__input--select" id="language" name="language">
+            <option th:value="${language}" th:text="${language}" selected>English</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field" data-field="timeZone">
+        <label class="field__label" for="timeZone">Time Zone</label>
+        <div class="control">
+          <select class="control__input control__input--select" id="timeZone" name="timeZone">
+            <option th:value="${timeZone}" th:text="${timeZoneLabel}" selected>( GMT +05:30 ) India Standard Time ( Asia/Kolkata )</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field" data-field="currency">
+        <label class="field__label" for="currency">Base Currency</label>
+        <div class="control">
+          <select class="control__input control__input--select" id="currency" name="currency">
+            <option th:value="${currency}" th:text="${currencyLabel}" selected>INR - Indian Rupee</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field" data-field="fiscalYearStart">
+        <label class="field__label" for="fiscalYearStart">Fiscal Year<span class="field__req" aria-hidden="true">*</span></label>
+        <div class="control">
+          <select class="control__input control__input--select" id="fiscalYearStart" name="fiscalYearStart" required aria-required="true">
+            <option th:each="entry : ${fiscalYears}" th:value="${entry.key}" th:text="${entry.value}"
+                    th:selected="${form['fiscalYearStart'] == #strings.toString(entry.key)}">April - March</option>
+          </select>
+        </div>
+        <p class="field__error" th:text="${errors['fiscalYearStart']}"></p>
+      </div>
+
+      <div class="field" data-field="inventoryStartDate">
+        <label class="field__label" for="inventoryStartDate">Inventory Start Date<span class="field__req" aria-hidden="true">*</span></label>
+        <div class="control">
+          <input class="control__input" id="inventoryStartDate" name="inventoryStartDate" type="date"
+                 th:value="${form['inventoryStartDate']}" required aria-required="true">
+        </div>
+        <p class="field__error" th:text="${errors['inventoryStartDate']}"></p>
+      </div>
+
+      <p class="onb__note field--full">
+        Note: you can update some of these preferences from Settings anytime.
+      </p>
+    </section>
+
+    <div class="onb__actions">
+      <button class="btn btn--primary" id="onboardingSubmit" type="submit">
+        <span class="btn__label">Save and continue</span>
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
+             stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M5 12h13"/><path d="m12 5 7 7-7 7"/>
+        </svg>
+      </button>
+    </div>
+  </form>
+
+</main>
+
+<footer th:replace="~{fragments :: footer}"></footer>
+
+<script th:src="@{/js/onboarding.js(v=${assetV})}" defer></script>
+</body>
+</html>

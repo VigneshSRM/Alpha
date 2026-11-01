@@ -49,10 +49,11 @@
             novalidate autocomplete="on" data-mode="login"
             data-check-endpoint="/api/password-check">
         <input type="hidden" name="csrf_token" th:value="${_csrf.token}">
+        <p class="form__req-note">Fields marked <span class="field__req" aria-hidden="true">*</span> are required.</p>
         <input type="hidden" name="next" th:value="${nextUrl}">
 
         <div class="field" data-field="email">
-          <label class="field__label" for="email">E-mail address</label>
+          <label class="field__label" for="email">E-mail address<span class="field__req" aria-hidden="true">*</span></label>
           <div class="control">
             <span class="control__icon" aria-hidden="true">
               <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"
@@ -62,7 +63,7 @@
             </span>
             <input class="control__input" id="email" name="email" type="email" inputmode="email"
                    autocomplete="username" spellcheck="false" placeholder="name@alphagroup.in"
-                   th:value="${form['email']}" maxlength="254" required aria-describedby="emailError">
+                   th:value="${form['email']}" maxlength="254" required aria-describedby="emailError" aria-required="true">
             <button class="control__action control__action--ghost" type="button" id="clearEmail"
                     hidden aria-label="Clear e-mail field" tabindex="-1">
               <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"
@@ -74,7 +75,7 @@
 
         <div class="field" data-field="password">
           <div class="field__top">
-            <label class="field__label" for="password">Password</label>
+            <label class="field__label" for="password">Password<span class="field__req" aria-hidden="true">*</span></label>
             <th:block th:replace="~{fragments :: hintIcon}"></th:block>
           </div>
 
@@ -88,7 +89,7 @@
             </span>
             <input class="control__input control__input--password" id="password" name="password"
                    type="password" autocomplete="current-password" placeholder="Your password"
-                   maxlength="128" required aria-describedby="passwordError capsLock" enterkeyhint="go">
+                   maxlength="128" required aria-describedby="passwordError capsLock" enterkeyhint="go" aria-required="true">
             <button class="control__action" type="button" id="togglePassword"
                     aria-label="Show password" aria-pressed="false" title="Show password">
               <th:block th:replace="~{fragments :: eyeIcons}"></th:block>
@@ -163,7 +164,7 @@
     <form class="form" id="forgotForm" method="post" action="/forgot-password" novalidate>
       <input type="hidden" name="csrf_token" th:value="${_csrf.token}">
       <div class="field" data-field="forgotEmail">
-        <label class="field__label" for="forgotEmail">E-mail address</label>
+        <label class="field__label" for="forgotEmail">E-mail address<span class="field__req" aria-hidden="true">*</span></label>
         <div class="control">
           <span class="control__icon" aria-hidden="true">
             <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8"
@@ -172,7 +173,7 @@
             </svg>
           </span>
           <input class="control__input" id="forgotEmail" name="email" type="email" inputmode="email"
-                 autocomplete="email" placeholder="name@alphagroup.in" required>
+                 autocomplete="email" placeholder="name@alphagroup.in" required aria-required="true">
         </div>
         <p class="field__error" id="forgotEmailError" role="alert"></p>
       </div>
